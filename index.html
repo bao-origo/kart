@@ -130,11 +130,11 @@ button, input, select { font: inherit; color: inherit; }
   border-color: var(--ink);
 }
 
-/* Floating in the map's bottom left corner, opposite the zoom controls. */
-#theme {
+/* Floating in the map's left corners: the panel toggle on the panel's own edge at
+   the top, the theme button at the bottom, opposite the zoom controls. */
+#theme, #collapse {
   position: absolute;
   left: 14px;
-  bottom: 14px;
   z-index: 5;
   width: 32px;
   height: 32px;
@@ -147,7 +147,9 @@ button, input, select { font: inherit; color: inherit; }
   line-height: 1;
   cursor: pointer;
 }
-#theme:hover { background: var(--plane); }
+#theme { bottom: 14px; }
+#collapse { top: 14px; }
+#theme:hover, #collapse:hover { background: var(--plane); }
 
 #q {
   width: 100%;
@@ -161,12 +163,16 @@ main {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 1fr minmax(240px, 300px);
+  grid-template-columns: minmax(240px, 300px) 1fr;
   /* There is no header above us any more, so installed on a phone the plan would
      otherwise start under the notch. */
   padding-top: env(safe-area-inset-top);
   background: var(--surface);
 }
+/* Collapsed, the panel is plain [hidden] and its column goes with it. This selector
+   outweighs the bare `main` rules in the media queries below, so the collapse holds
+   in every layout without being repeated in each of them. */
+main:has(#panel[hidden]) { grid-template-columns: 1fr; }
 
 /* ---- map ---- */
 
@@ -255,7 +261,7 @@ main {
 /* ---- panel ---- */
 
 aside {
-  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
   background: var(--surface);
   overflow: auto;
   min-height: 0;   /* same reason as .map */
@@ -320,14 +326,16 @@ h2 {
 /* Narrow laptops: the panel gives width back to the plan before the layout has to
    break into one column. */
 @media (max-width: 1024px) {
-  main { grid-template-columns: 1fr minmax(200px, 250px); }
+  main { grid-template-columns: minmax(200px, 250px) 1fr; }
 }
 
 /* Phones and narrow windows: one column, the plan on top, the panel scrolling
    underneath it with the page. */
 @media (max-width: 720px) {
   main { grid-template-columns: 1fr; grid-template-rows: auto auto; overflow: auto; }
-  aside { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+  /* The plan leads here, whichever side the panel is on when there is room for it. */
+  .map { order: -1; }
+  aside { border-right: 0; border-top: 1px solid var(--line); overflow: visible; }
 
   /* The plan sizes itself — width: 100% of a fixed-aspect image — so letting the
      viewport follow its content is what keeps a band of empty sheet from opening
@@ -342,16 +350,17 @@ h2 {
 /* A phone on its side has the width for two columns and nowhere near the height
    for two rows, so it keeps the desktop layout. */
 @media (max-width: 720px) and (orientation: landscape) {
-  main { grid-template-columns: 1fr minmax(180px, 40%); grid-template-rows: 1fr; overflow: hidden; }
+  main { grid-template-columns: minmax(180px, 40%) 1fr; grid-template-rows: 1fr; overflow: hidden; }
+  .map { order: 0; }
   .viewport { flex: 1; max-height: none; }
-  aside { border-left: 1px solid var(--line); border-top: 0; overflow: auto; }
+  aside { border-right: 1px solid var(--line); border-top: 0; overflow: auto; }
 }
 
 /* Fingers, not a cursor: everything hittable grows to roughly 44px, and the pills
    on the plan grow with it. */
 @media (pointer: coarse) {
   .floors button { min-height: 40px; }
-  #theme, .toolbar button { width: 40px; height: 40px; }
+  #theme, #collapse, .toolbar button { width: 40px; height: 40px; }
   #q { padding: 9px 10px; }
   #zoom { height: 32px; }
   .type { padding: 8px 6px; }
@@ -362,7 +371,24 @@ h2 {
 </head>
 <body>
 
+<!-- The title lives in <title> and in the app name; on screen the floor buttons took
+     its place. It stays here for screen readers, which need a heading — outside the
+     panel, which is gone from the page while collapsed. -->
+<h1 class="sr-only">Møteromskart – Grensesvingen 6</h1>
+
 <main>
+  <aside id="panel">
+    <div class="controls">
+      <nav class="floors" id="floors" aria-label="Etasje"></nav>
+      <span id="status" aria-live="polite"></span>
+      <search>
+        <input id="q" type="search" aria-label="Søk etter rom"
+               placeholder="Søk etter rom, f.eks. 372" autocomplete="off">
+      </search>
+    </div>
+    <div id="list"></div>
+  </aside>
+
   <section class="map">
     <div class="toolbar">
       <label for="zoom">Zoom</label>
@@ -378,23 +404,9 @@ h2 {
         <img id="planimg" alt="" draggable="false">
       </div>
     </div>
+    <button type="button" id="collapse" aria-expanded="true" aria-controls="panel"></button>
     <button type="button" id="theme"></button>
   </section>
-
-  <aside>
-    <!-- The title lives in <title> and in the app name; on screen the floor buttons
-         took its place. It stays here for screen readers, which need a heading. -->
-    <h1 class="sr-only">Møteromskart – Grensesvingen 6</h1>
-    <div class="controls">
-      <nav class="floors" id="floors" aria-label="Etasje"></nav>
-      <span id="status" aria-live="polite"></span>
-      <search>
-        <input id="q" type="search" aria-label="Søk etter rom"
-               placeholder="Søk etter rom, f.eks. 372" autocomplete="off">
-      </search>
-    </div>
-    <div id="list"></div>
-  </aside>
 </main>
 
 <script>
@@ -412,6 +424,8 @@ const el = {
   plan: document.getElementById('plan'),
   img: document.getElementById('planimg'),
   theme: document.getElementById('theme'),
+  panel: document.getElementById('panel'),
+  collapse: document.getElementById('collapse'),
   list: document.getElementById('list'),
   status: document.getElementById('status'),
 };
@@ -643,6 +657,23 @@ el.theme.onclick = () => {
 };
 systemDark.onchange = applyTheme;
 applyTheme();
+
+/* ---------- panel ---------- */
+
+// Collapsed, the panel is plain [hidden]: it leaves the layout altogether and the
+// plan takes the window. The toggle floats on the plan, so it survives the collapse
+// and is the way back.
+function setPanel(open) {
+  el.panel.toggleAttribute('hidden', !open);
+  el.collapse.setAttribute('aria-expanded', String(open));
+  el.collapse.textContent = open ? '◀' : '▶';
+  const text = open ? 'Skjul panelet' : 'Vis panelet';
+  el.collapse.title = text;
+  el.collapse.setAttribute('aria-label', text);
+}
+
+el.collapse.onclick = () => setPanel(el.panel.hidden);
+setPanel(true);
 
 /* ---------- drag to pan, pinch to zoom ---------- */
 

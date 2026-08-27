@@ -160,6 +160,20 @@ themeButton.click();
 assert.equal(theme(), "light", "back to following the system");
 assert.equal(w.localStorage.theme, undefined);
 
+// The panel collapses out of the layout and back, and its toggle — which floats on
+// the plan, not in the panel — is the way back.
+const collapse = d.getElementById("collapse");
+const panel = d.getElementById("panel");
+assert.equal(panel.hidden, false);
+collapse.click();
+assert.equal(panel.hidden, true);
+assert.equal(collapse.getAttribute("aria-expanded"), "false");
+assert.match(collapse.getAttribute("aria-label"), /Vis/);
+collapse.click();
+assert.equal(panel.hidden, false);
+assert.equal(collapse.getAttribute("aria-expanded"), "true");
+assert.equal(d.querySelector("h1").closest("aside"), null, "the heading outlives a collapse");
+
 // PWA shell: the manifest parses, every file it and the service worker name is
 // really there, and no path is absolute — the site is served from a subpath.
 const manifest = JSON.parse(fs.readFileSync(

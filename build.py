@@ -89,6 +89,15 @@ def main():
         floor = name[0]
         page = pymupdf.open(path)[0]
 
+        # The sheet's own "Plan N" caption sits above the building, inside the frame
+        # we render. Paint it out in paper white: the app inverts the whole image in
+        # dark mode, so a white patch stays invisible in both themes.
+        caption = page.search_for(f"Plan {floor}")
+        if not caption:
+            print(f"floor {floor}: no 'Plan {floor}' caption found")
+        for rect in caption:
+            page.draw_rect(rect, color=None, fill=(1, 1, 1))
+
         pixmap = page.get_pixmap(dpi=DPI, clip=CLIP)
         pixmap.save(os.path.join(here, f"plan-{floor}.png"))
 
