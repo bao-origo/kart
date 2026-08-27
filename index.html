@@ -272,17 +272,14 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
   align-items: center;
   gap: 6px;
   padding: 4px 9px;
-  border: 1px solid var(--ring);
+  border: 0;
   border-radius: 999px;
   font-size: 12px;
   white-space: nowrap;
   cursor: pointer;
 }
-.filters label:hover { background: var(--plane); }
-.filters label:has(:checked) {
-  border-color: var(--c);
-  background: color-mix(in srgb, var(--c) 14%, transparent);
-}
+/* No border, no fill: an unchecked type is the dimmed one — muted label, faded
+   swatch — and the hidden checkbox is what actually carries the state. */
 .filters label:not(:has(:checked)) { color: var(--ink-muted); }
 .filters label:not(:has(:checked)) .swatch { opacity: .35; }
 .filters label:has(:focus-visible) { outline: 2px solid var(--ink); outline-offset: 1px; }
