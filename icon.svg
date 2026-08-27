@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Møteromskart">
+  <!-- Full-bleed background: the icon is declared maskable, so the platform may
+       crop it to a circle. Everything that must survive stays inside the middle
+       80% (the safe zone), i.e. 51..461. -->
+  <rect width="512" height="512" fill="#2974d0"/>
+  <g fill="none" stroke="#fff" stroke-width="26" stroke-linejoin="round">
+    <rect x="96" y="112" width="320" height="288" rx="18"/>
+    <path d="M224 112v288M96 268h128"/>
+  </g>
+  <circle cx="320" cy="256" r="46" fill="#fff"/>
+</svg>

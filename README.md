@@ -15,6 +15,8 @@ reads two JSON files at runtime.
 | `index.html` | the whole site — markup, styles and script |
 | `names.json` | hand-edited `{"N 381": "Bjørvika"}` map, merged in at runtime |
 | `plan-N.png`, `rooms.json` | generated, committed so the site works straight off GitHub Pages |
+| `manifest.webmanifest`, `sw.js` | make it installable and usable offline |
+| `icon.svg`, `icon-*.png`, `apple-touch-icon.png` | app icons; the PNGs are rendered from the SVG |
 | `check.mjs` | smoke test for `index.html` |
 
 ## Rebuilding after new drawings
@@ -42,6 +44,29 @@ The drawings only carry numbers. To show real names, add them to `names.json`:
 ```
 
 Runtime only — no rebuild needed.
+
+## Installing it as an app
+
+The site is a PWA: Chrome and Edge offer "Install" in the address bar, Android
+offers "Add to home screen", and on iOS it is Share → "Add to Home Screen". Installed,
+it opens without browser chrome and the layout reaches under the notch.
+
+`sw.js` caches the shell — `index.html`, `rooms.json`, `names.json`, the icons — on
+install, and each `plan-N.png` the first time that floor is opened, so every floor you
+have looked at once still works with no network. The plans are ~500 kB each, which is
+why they are not all pulled down up front.
+
+Caching is stale-while-revalidate: a visit serves the cached copy and fetches a fresh
+one for next time, so a deploy shows up on the second load, not the first. **Bump
+`CACHE` in `sw.js`** whenever the shell file list changes, or the old cache sticks
+around.
+
+The icons are rendered from `icon.svg`:
+
+```sh
+for s in 192 512; do rsvg-convert -w $s -h $s icon.svg -o icon-$s.png; done
+rsvg-convert -w 180 -h 180 icon.svg -o apple-touch-icon.png   # iOS ignores SVG
+```
 
 ## Local preview and tests
 

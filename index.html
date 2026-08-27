@@ -2,8 +2,23 @@
 <html lang="nb">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- viewport-fit=cover so the layout reaches under the notch on a phone; the
+     safe-area insets below keep the controls out of it. No maximum-scale: browser
+     zoom stays available. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Møteromskart – Grensesvingen 6</title>
+<meta name="description" content="Finn møterom i Grensesvingen 6, etasje 3–8.">
+<link rel="manifest" href="manifest.webmanifest">
+<!-- The browser and iOS chrome follow the theme instead of flashing white. -->
+<meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1a1a19" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Møteromskart">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<!-- iOS ignores both the manifest icons and SVG here, so it gets its own PNG. -->
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <script>
   // Resolve the theme before the first paint, so there is no flash of the wrong one.
   // No stored choice means follow the system.
@@ -51,6 +66,10 @@ body {
   color: var(--ink);
   background: var(--plane);
   height: 100dvh;
+  /* No pull-to-refresh or rubber-banding of the whole app: on a phone the gesture
+     that pans the map starts the same way as the one that reloads the page. */
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
   /* Nothing may escape the viewport: if the page itself scrolls, the map has
      grown past its box and its own scrolling is silently dead. */
   overflow: hidden;
@@ -63,7 +82,10 @@ header {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 20px;
-  padding: 10px 16px;
+  /* Installed on a phone there is no browser chrome above us, so the header has to
+     clear the notch and the rounded corners itself. */
+  padding: max(10px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+           10px max(16px, env(safe-area-inset-left));
   border-bottom: 1px solid var(--line);
   background: var(--surface);
 }
@@ -133,6 +155,7 @@ main {
   border-bottom: 1px solid var(--line);
 }
 .toolbar button {
+  flex: none;
   width: 28px;
   height: 28px;
   border: 1px solid var(--ring);
@@ -142,6 +165,9 @@ main {
 }
 .toolbar button.wide { width: auto; padding: 0 10px; }
 #zoom { width: 140px; accent-color: var(--series-1); }
+/* One line, cut off if it has to be: wrapping the count into four lines on a phone
+   would push the map off the screen. */
+#status { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .viewport {
   flex: 1;
@@ -196,7 +222,8 @@ aside {
   background: var(--surface);
   overflow: auto;
   min-height: 0;   /* same reason as .map */
-  padding: 12px 14px 24px;
+  padding: 12px max(14px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom))
+           max(14px, env(safe-area-inset-left));
 }
 fieldset { border: 0; margin: 0 0 14px; padding: 0; }
 legend { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-muted); padding: 0 0 6px; }
@@ -246,11 +273,56 @@ h2 {
 }
 .empty { color: var(--ink-2); font-size: 13px; padding: 8px 0; }
 
+/* Narrow laptops: the panel gives width back to the plan before the layout has to
+   break into one column. */
+@media (max-width: 1024px) {
+  main { grid-template-columns: 1fr minmax(200px, 250px); }
+}
+
+/* Phones and narrow windows: one column, the plan on top, the panel scrolling
+   underneath it with the page. Vertical space is the scarce one here, so the
+   header packs into two rows and the toolbar into one. */
 @media (max-width: 720px) {
-  main { grid-template-columns: 1fr; grid-template-rows: 55dvh auto; overflow: auto; }
+  main { grid-template-columns: 1fr; grid-template-rows: auto auto; overflow: auto; }
   aside { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
-  header search { margin-left: 0; width: 100%; }
+
+  /* The plan sizes itself — width: 100% of a fixed-aspect image — so letting the
+     viewport follow its content is what keeps a band of empty sheet from opening
+     under it at fit zoom. The cap takes over once zooming makes it tall. */
+  .viewport { flex: none; max-height: 55dvh; }
+
+  /* Row 1: title and theme. Row 2: floors and search, which shrinks to whatever
+     the floor buttons leave it. */
+  h1 { flex: 1; font-size: 15px; }
+  h1 small { display: inline; }
+  #theme { order: 1; }
+  .floors { order: 2; }
+  .floors button { min-width: 36px; padding: 5px 4px; }
+  header search { order: 3; flex: 1; min-width: 90px; margin-left: 0; }
   #q { width: 100%; }
+
+  .toolbar label { display: none; }   /* the slider and ± say "zoom" on their own */
+  #zoom { flex: 1; width: auto; min-width: 60px; }
+}
+
+/* A phone on its side has the width for two columns and nowhere near the height
+   for two rows, so it keeps the desktop layout. */
+@media (max-width: 720px) and (orientation: landscape) {
+  main { grid-template-columns: 1fr minmax(180px, 40%); grid-template-rows: 1fr; overflow: hidden; }
+  .viewport { flex: 1; max-height: none; }
+  aside { border-left: 1px solid var(--line); border-top: 0; overflow: auto; }
+}
+
+/* Fingers, not a cursor: everything hittable grows to roughly 44px, and the pills
+   on the plan grow with it. */
+@media (pointer: coarse) {
+  .floors button { min-width: 44px; min-height: 40px; }
+  #theme, .toolbar button { width: 40px; height: 40px; }
+  #q { padding: 9px 10px; }
+  #zoom { height: 32px; }
+  .filters label { padding: 7px 0; }
+  .rooms button { padding: 9px 6px; }
+  .marker { padding: 4px 8px; font-size: 12px; }
 }
 </style>
 </head>
@@ -642,6 +714,12 @@ Promise.all([
   el.list.textContent = 'Klarte ikke å laste romdata.';
   console.error(err);
 });
+
+// Installable and offline-capable. Nothing on the page depends on it, so a browser
+// without service workers — or the file opened straight off disk — just skips it.
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(console.error));
+}
 </script>
 </body>
 </html>

@@ -149,4 +149,26 @@ themeButton.click();
 assert.equal(theme(), "light", "back to following the system");
 assert.equal(w.localStorage.theme, undefined);
 
+// PWA shell: the manifest parses, every file it and the service worker name is
+// really there, and no path is absolute — the site is served from a subpath.
+const manifest = JSON.parse(fs.readFileSync(
+  `${root}/${d.querySelector("link[rel=manifest]").getAttribute("href")}`, "utf8"));
+const swSource = fs.readFileSync(`${root}/sw.js`, "utf8");
+const precached = JSON.parse(swSource.match(/const SHELL = (\[.*?\])/s)[1].replaceAll("'", '"'));
+
+const referenced = [
+  ...manifest.icons.map(i => i.src),
+  ...precached.map(f => (f === "./" ? "index.html" : f)),
+  d.querySelector('link[rel="apple-touch-icon"]').getAttribute("href"),
+  "sw.js",
+];
+for (const path of referenced) {
+  assert.ok(!path.startsWith("/"), `${path} must be relative to work from a subpath`);
+  assert.ok(fs.existsSync(`${root}/${path}`), `${path} is referenced but missing`);
+}
+assert.equal(manifest.start_url, ".");
+assert.equal(manifest.scope, ".");
+assert.ok(manifest.icons.some(i => i.purpose === "maskable"), "Android crops the icon");
+assert.ok(precached.includes("rooms.json"), "the map is empty offline without the room data");
+
 console.log(`all checks passed (${Object.values(rooms).flat().length} rooms)`);
