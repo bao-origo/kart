@@ -1,3 +1,7 @@
 .serena
 .tokensave
 .codegraph
+node_modules
+package-lock.json
+nvim.log
+*.pdf

@@ -1,0 +1,647 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Møteromskart – Grensesvingen 6</title>
+<script>
+  // Resolve the theme before the first paint, so there is no flash of the wrong one.
+  // No stored choice means follow the system.
+  document.documentElement.dataset.theme = localStorage.theme
+    || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+</script>
+<style>
+:root {
+  color-scheme: light;
+  --surface: #fcfcfb;
+  --plane: #f9f9f7;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --ink-muted: #898781;
+  --line: #e1e0d9;
+  --ring: rgba(11, 11, 11, .1);
+  /* Darkened just enough that white text on them clears 4.5:1, since the pills
+     are filled with these. */
+  --series-1: #2974d0;  /* Møterom */
+  --series-2: #be542a;  /* Multirom */
+  --series-3: #15855d;  /* øvrige romtyper */
+  --plan-invert: 0;
+}
+/* The script in <head> always resolves data-theme to light or dark, so the system
+   preference needs no media query of its own. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface: #1a1a19;
+  --plane: #0d0d0d;
+  --ink: #fff;
+  --ink-2: #c3c2b7;
+  --line: #2c2c2a;
+  --ring: rgba(255, 255, 255, .1);
+  --series-1: #3275c7;
+  --series-2: #c35022;
+  --series-3: #15855e;
+  --plan-invert: 1;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--ink);
+  background: var(--plane);
+  height: 100dvh;
+  /* Nothing may escape the viewport: if the page itself scrolls, the map has
+     grown past its box and its own scrolling is silently dead. */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+h1 { font-size: 16px; margin: 0; }
+h1 small { display: block; font-weight: 400; font-size: 12px; color: var(--ink-2); }
+header search { margin-left: auto; }
+
+button, input, select { font: inherit; color: inherit; }
+
+.floors { display: flex; gap: 4px; }
+.floors button {
+  min-width: 38px;
+  padding: 5px 8px;
+  border: 1px solid var(--ring);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+.floors button:hover { background: var(--plane); }
+.floors button[aria-current="true"] {
+  background: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
+}
+
+#theme {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--ring);
+  border-radius: 6px;
+  background: transparent;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+#theme:hover { background: var(--plane); }
+
+#q {
+  width: min(46vw, 260px);
+  padding: 6px 10px;
+  border: 1px solid var(--ring);
+  border-radius: 6px;
+  background: var(--plane);
+}
+
+main {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr minmax(240px, 300px);
+}
+
+/* ---- map ---- */
+
+/* Both min-*: 0 are load-bearing. A grid item's automatic minimum size is its
+   min-content size, so without these .map refuses to shrink below the full height
+   of the plan, .viewport is handed that height, and nothing is left to scroll. */
+.map { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  font-size: 13px;
+  color: var(--ink-2);
+  border-bottom: 1px solid var(--line);
+}
+.toolbar button {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--ring);
+  border-radius: 6px;
+  background: var(--surface);
+  cursor: pointer;
+}
+.toolbar button.wide { width: auto; padding: 0 10px; }
+#zoom { width: 140px; accent-color: var(--series-1); }
+
+.viewport {
+  flex: 1;
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: var(--surface);
+  touch-action: none;   /* we drive pan and pinch ourselves */
+  cursor: grab;
+}
+.viewport.dragging { cursor: grabbing; }
+.plan { position: relative; width: 100%; user-select: none; }
+.plan img {
+  display: block;
+  width: 100%;
+  filter: invert(var(--plan-invert)) hue-rotate(calc(var(--plan-invert) * 180deg));
+}
+
+.marker {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  translate: -50% -50%;
+  padding: 2px 6px;
+  /* Filled with the type colour, white on top: the type reads from across the
+     room instead of from a 2px ring. The outer ring of surface colour lifts the
+     pill clear of the line work printed underneath it. */
+  border: 0;
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px var(--surface);
+  font: 700 11px/1.35 system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .02em;
+  white-space: nowrap;
+  color: #fff;
+  background: var(--c);
+  cursor: pointer;
+}
+.marker[data-color="1"] { --c: var(--series-1); }
+.marker[data-color="2"] { --c: var(--series-2); }
+.marker[data-color="3"] { --c: var(--series-3); }
+.marker:hover, .marker:focus-visible { z-index: 3; scale: 1.25; }
+.marker[aria-current="true"] {
+  z-index: 4;
+  scale: 1.35;
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--c);
+}
+
+/* ---- panel ---- */
+
+aside {
+  border-left: 1px solid var(--line);
+  background: var(--surface);
+  overflow: auto;
+  min-height: 0;   /* same reason as .map */
+  padding: 12px 14px 24px;
+}
+fieldset { border: 0; margin: 0 0 14px; padding: 0; }
+legend { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-muted); padding: 0 0 6px; }
+.filters label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 2px 0;
+  font-size: 13px;
+  cursor: pointer;
+}
+.filters input { accent-color: var(--ink); margin: 0; }
+.swatch { width: 10px; height: 10px; border-radius: 3px; background: var(--c); flex: none; }
+.filters .n { margin-left: auto; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+
+h2 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--ink-muted);
+  margin: 14px 0 4px;
+}
+.rooms { list-style: none; margin: 0; padding: 0; }
+.rooms button {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.rooms button:hover { background: var(--plane); }
+.rooms button[aria-current="true"] { background: var(--plane); box-shadow: inset 2px 0 0 var(--ink); }
+.rooms .code { font-weight: 600; font-variant-numeric: tabular-nums; }
+.rooms .meta { color: var(--ink-2); font-size: 13px; }
+.rooms .floor {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--ink-2);
+  border: 1px solid var(--ring);
+  border-radius: 4px;
+  padding: 0 5px;
+}
+.empty { color: var(--ink-2); font-size: 13px; padding: 8px 0; }
+
+@media (max-width: 720px) {
+  main { grid-template-columns: 1fr; grid-template-rows: 55dvh auto; overflow: auto; }
+  aside { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+  header search { margin-left: 0; width: 100%; }
+  #q { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Møteromskart <small>Grensesvingen 6</small></h1>
+  <nav class="floors" id="floors" aria-label="Etasje"></nav>
+  <search>
+    <input id="q" type="search" aria-label="Søk etter rom"
+           placeholder="Søk etter rom, f.eks. 372" autocomplete="off">
+  </search>
+  <button type="button" id="theme"></button>
+</header>
+
+<main>
+  <section class="map">
+    <div class="toolbar">
+      <label for="zoom">Zoom</label>
+      <button type="button" id="out" aria-label="Zoom ut">−</button>
+      <input id="zoom" type="range" min="100" max="450" step="1" value="100">
+      <button type="button" id="in" aria-label="Zoom inn">+</button>
+      <button type="button" id="fit" class="wide">Tilpass</button>
+      <span id="status" aria-live="polite"></span>
+    </div>
+    <div class="viewport" id="viewport">
+      <div class="plan" id="plan">
+        <img id="planimg" alt="">
+      </div>
+    </div>
+  </section>
+
+  <aside>
+    <fieldset class="filters">
+      <legend>Romtyper</legend>
+      <div id="filters"></div>
+    </fieldset>
+    <div id="list"></div>
+  </aside>
+</main>
+
+<script>
+const FLOOR_ORDER = ['3', '4', '5', '6', '7', '8'];
+const TYPE_ORDER = ['Møterom', 'Multirom', 'Prosjektrom', 'Pod 1p', 'Sosial sone', 'Hvilerom', 'Datarom'];
+// Three validated categorical hues; everything past the two meeting-room types
+// shares slot 3. The exact type is always spelled out in text, never colour alone.
+const COLOR = { 'Møterom': '1', 'Multirom': '2' };
+
+const el = {
+  floors: document.getElementById('floors'),
+  q: document.getElementById('q'),
+  zoom: document.getElementById('zoom'),
+  viewport: document.getElementById('viewport'),
+  plan: document.getElementById('plan'),
+  img: document.getElementById('planimg'),
+  theme: document.getElementById('theme'),
+  filters: document.getElementById('filters'),
+  list: document.getElementById('list'),
+  status: document.getElementById('status'),
+};
+
+let rooms = {};       // floor -> [room]
+let names = {};       // "N 381" -> "Bjørvika"
+let floor = '3';
+let selected = null;  // slug
+let hidden = new Set();
+
+const slug = code => code ? code.replace(/\s+/g, '') : '';
+const norm = s => (s || '').toLowerCase().replace(/\s+/g, '');
+const id = r => slug(r.code) || `${r.type}-${r.x}`;
+const nameOf = r => names[r.code] || '';
+const label = r => [r.code || 'uten romnummer', nameOf(r)].filter(Boolean).join(' · ');
+
+function all() {
+  return FLOOR_ORDER.flatMap(f => (rooms[f] || []).map(r => ({ ...r, floor: f })));
+}
+
+function matches(r, query) {
+  if (hidden.has(r.type)) return false;
+  if (!query) return true;
+  return norm(r.code + r.type + nameOf(r)).includes(query);
+}
+
+/* ---------- rendering ---------- */
+
+function renderFloors() {
+  el.floors.replaceChildren(...FLOOR_ORDER.map(f => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = f + '.';
+    b.setAttribute('aria-label', `${f}. etasje`);
+    b.setAttribute('aria-current', String(f === floor));
+    b.onclick = () => setFloor(f);
+    return b;
+  }));
+}
+
+function renderFilters() {
+  const counts = {};
+  for (const r of all()) counts[r.type] = (counts[r.type] || 0) + 1;
+  const types = TYPE_ORDER.filter(t => counts[t]);
+
+  el.filters.replaceChildren(...types.map(t => {
+    const l = document.createElement('label');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = !hidden.has(t);
+    cb.onchange = () => { cb.checked ? hidden.delete(t) : hidden.add(t); render(); };
+    const sw = document.createElement('span');
+    sw.className = 'swatch';
+    sw.style.setProperty('--c', `var(--series-${COLOR[t] || '3'})`);
+    const n = document.createElement('span');
+    n.className = 'n';
+    n.textContent = counts[t];
+    l.append(cb, sw, t, n);
+    return l;
+  }));
+}
+
+function renderMarkers(query) {
+  const markers = (rooms[floor] || [])
+    .filter(r => !hidden.has(r.type))
+    .map(r => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'marker';
+      b.dataset.color = COLOR[r.type] || '3';
+      b.dataset.id = id(r);
+      b.style.setProperty('--x', (r.x * 100).toFixed(2) + '%');
+      b.style.setProperty('--y', (r.y * 100).toFixed(2) + '%');
+      b.textContent = slug(r.code) || '•';
+      b.title = `${r.type} ${label(r)}`;
+      b.setAttribute('aria-label', `${r.type} ${label(r)}`);
+      if (query && !matches(r, query)) b.style.opacity = '.25';
+      if (id(r) === selected) b.setAttribute('aria-current', 'true');
+      b.onclick = () => select(id(r), false);
+      return b;
+    });
+  el.plan.replaceChildren(el.img, ...markers);
+  el.status.textContent = `${markers.length} rom i ${floor}. etasje`;
+}
+
+function roomButton(r, showFloor) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.dataset.id = id(r);
+  if (id(r) === selected && r.floor === floor) b.setAttribute('aria-current', 'true');
+
+  const code = document.createElement('span');
+  code.className = 'code';
+  code.textContent = r.code || '—';
+  const meta = document.createElement('span');
+  meta.className = 'meta';
+  meta.textContent = nameOf(r) || r.type;
+  b.append(code, meta);
+
+  if (showFloor) {
+    const f = document.createElement('span');
+    f.className = 'floor';
+    f.textContent = r.floor + '. et.';
+    b.append(f);
+  }
+  b.onclick = () => {
+    if (r.floor !== floor) setFloor(r.floor, id(r));
+    else select(id(r), true);
+  };
+  return b;
+}
+
+function renderList(query) {
+  const hits = (query ? all() : all().filter(r => r.floor === floor)).filter(r => matches(r, query));
+  if (!hits.length) {
+    el.list.replaceChildren(Object.assign(document.createElement('p'), {
+      className: 'empty',
+      textContent: 'Ingen treff.',
+    }));
+    return;
+  }
+
+  const groups = [];
+  for (const type of TYPE_ORDER) {
+    const inGroup = hits.filter(r => r.type === type);
+    if (!inGroup.length) continue;
+    const h = document.createElement('h2');
+    h.textContent = `${type} (${inGroup.length})`;
+    const ul = document.createElement('ul');
+    ul.className = 'rooms';
+    ul.append(...inGroup.map(r => {
+      const li = document.createElement('li');
+      li.append(roomButton(r, Boolean(query)));
+      return li;
+    }));
+    groups.push(h, ul);
+  }
+  el.list.replaceChildren(...groups);
+}
+
+function render() {
+  const query = norm(el.q.value);
+  el.img.src = `plan-${floor}.png`;
+  el.img.alt = `Plantegning ${floor}. etasje`;
+  renderFloors();
+  renderMarkers(query);
+  renderList(query);
+}
+
+/* ---------- state ---------- */
+
+// Zooms around a point on screen (fingers, cursor) so it stays put; defaults to
+// the middle of the viewport, which is what the slider and buttons want.
+function setZoom(v, anchorX, anchorY) {
+  const box = el.viewport.getBoundingClientRect();
+  if (anchorX === undefined) {
+    anchorX = box.left + box.width / 2;
+    anchorY = box.top + box.height / 2;
+  }
+  // The plan's width is a percentage of the viewport, so it tracks the zoom value
+  // exactly — no need to measure it, which would force a layout on every wheel tick.
+  // Read the scroll offsets first: resizing the plan can clamp them on the way out.
+  const from = Number(el.zoom.value);
+  const x = anchorX - box.left;
+  const y = anchorY - box.top;
+  const scrolled = { x: el.viewport.scrollLeft, y: el.viewport.scrollTop };
+
+  el.zoom.value = String(Math.round(Math.min(450, Math.max(100, v))));
+  el.plan.style.width = el.zoom.value + '%';
+
+  const scale = Number(el.zoom.value) / from;
+  if (scale !== 1) {
+    el.viewport.scrollLeft = (scrolled.x + x) * scale - x;
+    el.viewport.scrollTop = (scrolled.y + y) * scale - y;
+  }
+}
+
+function select(target, zoomIn) {
+  selected = target;
+  if (zoomIn && Number(el.zoom.value) < 200) setZoom(200);
+  render();
+  const marker = [...el.plan.querySelectorAll('.marker')].find(m => m.dataset.id === target);
+  if (marker) marker.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
+  // The row is already marked current; bring it into the panel too, so a pill
+  // clicked on the map points at its own row. 'nearest' so a row that is already
+  // visible — the usual case when the click came from the panel — stays put.
+  el.list.querySelector('[aria-current="true"]')?.scrollIntoView({ block: 'nearest' });
+  history.replaceState(null, '', `#${floor}/${target}`);
+}
+
+function setFloor(f, target = null) {
+  floor = f;
+  selected = target;
+  render();
+  if (target) select(target, true);
+  else history.replaceState(null, '', `#${floor}`);
+}
+
+function fromHash() {
+  const [f, target] = decodeURIComponent(location.hash.slice(1)).split('/');
+  if (!FLOOR_ORDER.includes(f)) return;
+  floor = f;
+  selected = target || null;
+  render();
+  if (selected) select(selected, true);
+}
+
+/* ---------- theme ---------- */
+
+// Cycles system -> light -> dark -> system, so picking a theme once doesn't mean
+// giving up following the system forever. No stored value means follow.
+const systemDark = matchMedia('(prefers-color-scheme: dark)');
+const THEMES = {
+  '': { icon: '◐', text: 'Tema: følger systemet', next: 'light' },
+  light: { icon: '☀', text: 'Tema: lyst', next: 'dark' },
+  dark: { icon: '☾', text: 'Tema: mørkt', next: '' },
+};
+
+function applyTheme() {
+  const choice = localStorage.theme || '';
+  document.documentElement.dataset.theme = choice || (systemDark.matches ? 'dark' : 'light');
+  el.theme.textContent = THEMES[choice].icon;
+  el.theme.title = THEMES[choice].text;
+  el.theme.setAttribute('aria-label', THEMES[choice].text);
+}
+
+el.theme.onclick = () => {
+  const next = THEMES[localStorage.theme || ''].next;
+  if (next) localStorage.theme = next;
+  else localStorage.removeItem('theme');
+  applyTheme();
+};
+systemDark.onchange = applyTheme;
+applyTheme();
+
+/* ---------- drag to pan, pinch to zoom ---------- */
+
+const pointers = new Map();
+let pinch = null;      // distance + zoom at the moment the second finger landed
+let travelled = 0;     // so a drag that ends on a marker isn't taken for a click
+let swallowUntil = 0;
+
+el.viewport.addEventListener('pointerdown', e => {
+  if (e.button !== 0) return;
+  pointers.set(e.pointerId, e);
+  pinch = null;
+  travelled = 0;
+  el.viewport.classList.add('dragging');
+});
+
+addEventListener('pointermove', e => {
+  const previous = pointers.get(e.pointerId);
+  if (!previous) return;
+  pointers.set(e.pointerId, e);
+  const [a, b] = [...pointers.values()];
+
+  if (b) {
+    const spread = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    if (!pinch) pinch = { spread, zoom: Number(el.zoom.value) };
+    else if (pinch.spread) {
+      travelled = Infinity;
+      setZoom(pinch.zoom * spread / pinch.spread, (a.clientX + b.clientX) / 2, (a.clientY + b.clientY) / 2);
+    }
+  } else {
+    const dx = e.clientX - previous.clientX;
+    const dy = e.clientY - previous.clientY;
+    travelled += Math.abs(dx) + Math.abs(dy);
+    el.viewport.scrollLeft -= dx;
+    el.viewport.scrollTop -= dy;
+  }
+  e.preventDefault();
+}, { passive: false });
+
+function endGesture(e) {
+  if (!pointers.delete(e.pointerId)) return;
+  pinch = null;
+  if (!pointers.size) {
+    el.viewport.classList.remove('dragging');
+    // A drag's own click lands immediately. Anything later — a keyboard Enter on
+    // a marker, say — is a real click and must get through.
+    swallowUntil = travelled > 4 ? e.timeStamp + 300 : 0;
+  }
+}
+addEventListener('pointerup', endGesture);
+addEventListener('pointercancel', endGesture);
+
+el.viewport.addEventListener('click', e => {
+  if (e.timeStamp > swallowUntil) return;
+  swallowUntil = 0;
+  e.stopPropagation();
+  e.preventDefault();
+}, true);
+
+// Every wheel event is ours: a trackpad pinch arrives as one with ctrlKey set, a
+// two-finger scroll as one without. Letting the browser scroll the plan natively
+// while we also write scrollLeft to anchor a zoom means two owners fighting over
+// the same offset, which is what makes interleaved panning and pinching stutter.
+el.viewport.addEventListener('wheel', e => {
+  e.preventDefault();
+  const lines = e.deltaMode === 1 ? 16 : 1;   // some mice report lines, not pixels
+  if (e.ctrlKey || e.metaKey) {
+    // Pinch ticks are small and frequent; a mouse wheel notch is a single big one,
+    // so cap the step or one notch would swallow the whole range.
+    const step = Math.max(-30, Math.min(30, e.deltaY * lines));
+    setZoom(Number(el.zoom.value) * Math.exp(-step / 120), e.clientX, e.clientY);
+  } else {
+    el.viewport.scrollLeft += e.deltaX * lines;
+    el.viewport.scrollTop += e.deltaY * lines;
+  }
+}, { passive: false });
+
+/* ---------- wiring ---------- */
+
+el.q.oninput = render;
+el.zoom.oninput = () => setZoom(Number(el.zoom.value));
+document.getElementById('in').onclick = () => setZoom(Number(el.zoom.value) + 50);
+document.getElementById('out').onclick = () => setZoom(Number(el.zoom.value) - 50);
+document.getElementById('fit').onclick = () => setZoom(100);
+window.onhashchange = fromHash;
+
+Promise.all([
+  fetch('rooms.json').then(r => r.json()),
+  fetch('names.json').then(r => r.json()).catch(() => ({})),
+]).then(([r, n]) => {
+  rooms = r;
+  names = n;
+  setZoom(100);
+  renderFilters();
+  render();
+  fromHash();
+}).catch(err => {
+  el.list.textContent = 'Klarte ikke å laste romdata.';
+  console.error(err);
+});
+</script>
+</body>
+</html>

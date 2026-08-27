@@ -1,0 +1,106 @@
+#!/usr/bin/env -S uv run
+# /// script
+# dependencies = ["pymupdf"]
+# ///
+"""Turn the architect's floor plan PDFs into plan-N.png + rooms.json.
+
+Run with `uv run build.py` after new PDFs land in this directory.
+"""
+
+import glob
+import json
+import math
+import os
+import re
+
+import pymupdf
+
+# The drawing frame, without the title block and revision table at the bottom.
+# 680 is just under the lowest wall on any floor (674 on the 8th), so the map ends
+# where the building does instead of on a band of empty sheet.
+CLIP = pymupdf.Rect(55, 25, 1140, 680)
+DPI = 200
+
+ROOM_TYPE = re.compile(
+    r"^(Møterom|Multirom|Prosjektrom|Hvilerom|Stillerom|Pod ?1p|Web-?rom|Datarom|Sosial sone)$"
+)
+ROOM_CODE = re.compile(r"^[NS]?\s?\d{3}$")
+
+# Codes sit right below their label, so weight vertical distance heavier.
+MATCH_RADIUS = 60
+
+
+def lines(page):
+    """Yield (text, centre x, centre y) for every text line in the drawing area."""
+    for block in page.get_text("dict")["blocks"]:
+        if block["type"] != 0:
+            continue
+        for line in block["lines"]:
+            text = "".join(span["text"] for span in line["spans"]).strip()
+            x0, y0, x1, y1 = line["bbox"]
+            x, y = (x0 + x1) / 2, (y0 + y1) / 2
+            if x < 190 and y < 330:
+                continue  # INNHOLD legend: "Multirom: 7" is a tally, not a room
+            if y > 700:
+                continue  # title block
+            yield text, x, y
+
+
+def rooms_on(page):
+    labels, codes = [], []
+    for text, x, y in lines(page):
+        if ROOM_TYPE.match(text):
+            labels.append((text, x, y))
+        elif ROOM_CODE.match(text):
+            codes.append([text, x, y, False])
+
+    out = []
+    for kind, x, y in labels:
+        nearest, best = None, math.inf
+        for code in codes:
+            if code[3]:
+                continue
+            dist = math.hypot(code[1] - x, (code[2] - y) * 1.4)
+            if dist < best:
+                nearest, best = code, dist
+        if nearest and best < MATCH_RADIUS:
+            nearest[3] = True
+        else:
+            nearest = None
+        out.append(
+            {
+                "type": kind,
+                "code": " ".join(nearest[0].split()) if nearest else None,
+                "x": round((x - CLIP.x0) / CLIP.width, 4),
+                "y": round((y - CLIP.y0) / CLIP.height, 4),
+            }
+        )
+    out.sort(key=lambda r: (r["type"], r["code"] or "zzz"))
+    return out
+
+
+def main():
+    here = os.path.dirname(os.path.abspath(__file__))
+    floors = {}
+    for path in sorted(glob.glob(os.path.join(here, "*.pdf"))):
+        name = os.path.basename(path)
+        floor = name[0]
+        page = pymupdf.open(path)[0]
+
+        pixmap = page.get_pixmap(dpi=DPI, clip=CLIP)
+        pixmap.save(os.path.join(here, f"plan-{floor}.png"))
+
+        rooms = floors[floor] = rooms_on(page)
+        unnamed = [r["type"] for r in rooms if not r["code"]]
+        print(
+            f"floor {floor}: {len(rooms)} rooms, {pixmap.width}x{pixmap.height} px"
+            + (f", {len(unnamed)} without a code: {', '.join(unnamed)}" if unnamed else "")
+        )
+
+    with open(os.path.join(here, "rooms.json"), "w", encoding="utf-8") as f:
+        json.dump(floors, f, ensure_ascii=False, indent=1)
+    print(f"total: {sum(len(r) for r in floors.values())} rooms across {len(floors)} floors")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,1076 @@
+{
+ "3": [
+  {
+   "type": "Hvilerom",
+   "code": "S 332",
+   "x": 0.3611,
+   "y": 0.8899
+  },
+  {
+   "type": "Multirom",
+   "code": "N 323",
+   "x": 0.2631,
+   "y": 0.2812
+  },
+  {
+   "type": "Multirom",
+   "code": "N 324",
+   "x": 0.3211,
+   "y": 0.3174
+  },
+  {
+   "type": "Multirom",
+   "code": "N 325",
+   "x": 0.3547,
+   "y": 0.2828
+  },
+  {
+   "type": "Multirom",
+   "code": "N 326",
+   "x": 0.3781,
+   "y": 0.3182
+  },
+  {
+   "type": "Multirom",
+   "code": "N 327",
+   "x": 0.4037,
+   "y": 0.2782
+  },
+  {
+   "type": "Multirom",
+   "code": "N 328",
+   "x": 0.4587,
+   "y": 0.2805
+  },
+  {
+   "type": "Multirom",
+   "code": "N 369",
+   "x": 0.3976,
+   "y": 0.2195
+  },
+  {
+   "type": "Multirom",
+   "code": "S 311",
+   "x": 0.5597,
+   "y": 0.7023
+  },
+  {
+   "type": "Multirom",
+   "code": "S 315",
+   "x": 0.7453,
+   "y": 0.7014
+  },
+  {
+   "type": "Multirom",
+   "code": "S 343",
+   "x": 0.3611,
+   "y": 0.7019
+  },
+  {
+   "type": "Multirom",
+   "code": "S 346",
+   "x": 0.3207,
+   "y": 0.7739
+  },
+  {
+   "type": "Multirom",
+   "code": "S 347",
+   "x": 0.3236,
+   "y": 0.8082
+  },
+  {
+   "type": "Multirom",
+   "code": "S 349",
+   "x": 0.5434,
+   "y": 0.8257
+  },
+  {
+   "type": "Multirom",
+   "code": "S 350",
+   "x": 0.5796,
+   "y": 0.7606
+  },
+  {
+   "type": "Multirom",
+   "code": "S 351",
+   "x": 0.5763,
+   "y": 0.8327
+  },
+  {
+   "type": "Multirom",
+   "code": "S 353",
+   "x": 0.675,
+   "y": 0.7604
+  },
+  {
+   "type": "Multirom",
+   "code": "S 354",
+   "x": 0.757,
+   "y": 0.7605
+  },
+  {
+   "type": "Møterom",
+   "code": "N 372",
+   "x": 0.4393,
+   "y": 0.1616
+  },
+  {
+   "type": "Møterom",
+   "code": "N 373",
+   "x": 0.5593,
+   "y": 0.2183
+  },
+  {
+   "type": "Møterom",
+   "code": "N 374",
+   "x": 0.618,
+   "y": 0.2182
+  },
+  {
+   "type": "Møterom",
+   "code": "N 375",
+   "x": 0.6487,
+   "y": 0.2189
+  },
+  {
+   "type": "Møterom",
+   "code": "N 381",
+   "x": 0.9286,
+   "y": 0.2072
+  },
+  {
+   "type": "Møterom",
+   "code": "N 382",
+   "x": 0.9662,
+   "y": 0.3404
+  },
+  {
+   "type": "Møterom",
+   "code": "N 383",
+   "x": 0.8434,
+   "y": 0.3739
+  },
+  {
+   "type": "Møterom",
+   "code": "N 384",
+   "x": 0.7957,
+   "y": 0.2855
+  },
+  {
+   "type": "Møterom",
+   "code": "N 385",
+   "x": 0.7199,
+   "y": 0.2841
+  },
+  {
+   "type": "Møterom",
+   "code": "S 320",
+   "x": 0.5592,
+   "y": 0.8871
+  },
+  {
+   "type": "Møterom",
+   "code": "S 321",
+   "x": 0.5803,
+   "y": 0.887
+  },
+  {
+   "type": "Møterom",
+   "code": "S 345",
+   "x": 0.2665,
+   "y": 0.7608
+  },
+  {
+   "type": "Møterom",
+   "code": "S 352",
+   "x": 0.6056,
+   "y": 0.7618
+  },
+  {
+   "type": "Pod 1p",
+   "code": "N 302",
+   "x": 0.5746,
+   "y": 0.284
+  },
+  {
+   "type": "Pod 1p",
+   "code": null,
+   "x": 0.5746,
+   "y": 0.3104
+  },
+  {
+   "type": "Pod 1p",
+   "code": null,
+   "x": 0.4051,
+   "y": 0.3995
+  },
+  {
+   "type": "Pod 1p",
+   "code": null,
+   "x": 0.4051,
+   "y": 0.426
+  },
+  {
+   "type": "Pod 1p",
+   "code": null,
+   "x": 0.4051,
+   "y": 0.3731
+  },
+  {
+   "type": "Prosjektrom",
+   "code": "S 312",
+   "x": 0.5998,
+   "y": 0.6953
+  },
+  {
+   "type": "Sosial sone",
+   "code": "304",
+   "x": 0.5002,
+   "y": 0.6812
+  },
+  {
+   "type": "Sosial sone",
+   "code": "N 376",
+   "x": 0.7159,
+   "y": 0.2329
+  },
+  {
+   "type": "Sosial sone",
+   "code": "S 348",
+   "x": 0.5073,
+   "y": 0.7607
+  },
+  {
+   "type": "Sosial sone",
+   "code": "S 349",
+   "x": 0.3617,
+   "y": 0.7607
+  },
+  {
+   "type": "Sosial sone",
+   "code": null,
+   "x": 0.521,
+   "y": 0.3532
+  }
+ ],
+ "4": [
+  {
+   "type": "Multirom",
+   "code": "S 415",
+   "x": 0.7017,
+   "y": 0.7589
+  },
+  {
+   "type": "Multirom",
+   "code": "S 417",
+   "x": 0.7006,
+   "y": 0.8275
+  },
+  {
+   "type": "Multirom",
+   "code": "S 425",
+   "x": 0.5939,
+   "y": 0.9061
+  },
+  {
+   "type": "Multirom",
+   "code": "S 426",
+   "x": 0.5609,
+   "y": 0.8886
+  },
+  {
+   "type": "Multirom",
+   "code": "S 437",
+   "x": 0.3006,
+   "y": 0.7588
+  },
+  {
+   "type": "Multirom",
+   "code": "S 447",
+   "x": 0.2444,
+   "y": 0.833
+  },
+  {
+   "type": "Multirom",
+   "code": "S 449",
+   "x": 0.2718,
+   "y": 0.833
+  },
+  {
+   "type": "Multirom",
+   "code": "S 450",
+   "x": 0.2625,
+   "y": 0.7669
+  },
+  {
+   "type": "Multirom",
+   "code": "S 451",
+   "x": 0.2784,
+   "y": 0.7667
+  },
+  {
+   "type": "Multirom",
+   "code": "S 452",
+   "x": 0.357,
+   "y": 0.7573
+  },
+  {
+   "type": "Multirom",
+   "code": "S 453",
+   "x": 0.3045,
+   "y": 0.8132
+  },
+  {
+   "type": "Multirom",
+   "code": "S 454",
+   "x": 0.3803,
+   "y": 0.7573
+  },
+  {
+   "type": "Multirom",
+   "code": "S 455",
+   "x": 0.3805,
+   "y": 0.8308
+  },
+  {
+   "type": "Multirom",
+   "code": null,
+   "x": 0.3573,
+   "y": 0.8308
+  },
+  {
+   "type": "Møterom",
+   "code": "402",
+   "x": 0.5514,
+   "y": 0.405
+  },
+  {
+   "type": "Møterom",
+   "code": "410",
+   "x": 0.6946,
+   "y": 0.405
+  },
+  {
+   "type": "Møterom",
+   "code": "S 421",
+   "x": 0.6415,
+   "y": 0.7601
+  },
+  {
+   "type": "Møterom",
+   "code": "S 422",
+   "x": 0.5587,
+   "y": 0.7609
+  },
+  {
+   "type": "Møterom",
+   "code": "S 431",
+   "x": 0.4116,
+   "y": 0.8861
+  },
+  {
+   "type": "Møterom",
+   "code": "S 432",
+   "x": 0.4428,
+   "y": 0.8856
+  },
+  {
+   "type": "Møterom",
+   "code": null,
+   "x": 0.9515,
+   "y": 0.1696
+  },
+  {
+   "type": "Sosial sone",
+   "code": "S 472",
+   "x": 0.5177,
+   "y": 0.739
+  }
+ ],
+ "5": [
+  {
+   "type": "Datarom",
+   "code": null,
+   "x": 0.3997,
+   "y": 0.3961
+  },
+  {
+   "type": "Multirom",
+   "code": "N 522",
+   "x": 0.2482,
+   "y": 0.3059
+  },
+  {
+   "type": "Multirom",
+   "code": "N 523",
+   "x": 0.2752,
+   "y": 0.2796
+  },
+  {
+   "type": "Multirom",
+   "code": "N 526",
+   "x": 0.3798,
+   "y": 0.2964
+  },
+  {
+   "type": "Multirom",
+   "code": "N 530",
+   "x": 0.6861,
+   "y": 0.2848
+  },
+  {
+   "type": "Multirom",
+   "code": "N 531",
+   "x": 0.8067,
+   "y": 0.2786
+  },
+  {
+   "type": "Multirom",
+   "code": "N 536",
+   "x": 0.8874,
+   "y": 0.1788
+  },
+  {
+   "type": "Multirom",
+   "code": "N 557",
+   "x": 0.2245,
+   "y": 0.3693
+  },
+  {
+   "type": "Multirom",
+   "code": "S 514",
+   "x": 0.5842,
+   "y": 0.6551
+  },
+  {
+   "type": "Multirom",
+   "code": "S 515",
+   "x": 0.7128,
+   "y": 0.7815
+  },
+  {
+   "type": "Multirom",
+   "code": "S 516",
+   "x": 0.6005,
+   "y": 0.7048
+  },
+  {
+   "type": "Multirom",
+   "code": "S 517",
+   "x": 0.7124,
+   "y": 0.8086
+  },
+  {
+   "type": "Multirom",
+   "code": "S 521",
+   "x": 0.6319,
+   "y": 0.8306
+  },
+  {
+   "type": "Multirom",
+   "code": "S 526",
+   "x": 0.6006,
+   "y": 0.8847
+  },
+  {
+   "type": "Multirom",
+   "code": "S 532",
+   "x": 0.3795,
+   "y": 0.7583
+  },
+  {
+   "type": "Multirom",
+   "code": "S 539",
+   "x": 0.1955,
+   "y": 0.7818
+  },
+  {
+   "type": "Multirom",
+   "code": "S 546",
+   "x": 0.2455,
+   "y": 0.7589
+  },
+  {
+   "type": "Multirom",
+   "code": "S 547",
+   "x": 0.2453,
+   "y": 0.8316
+  },
+  {
+   "type": "Multirom",
+   "code": "S 548",
+   "x": 0.3334,
+   "y": 0.7593
+  },
+  {
+   "type": "Multirom",
+   "code": "S 549",
+   "x": 0.3311,
+   "y": 0.8086
+  },
+  {
+   "type": "Møterom",
+   "code": "N 570",
+   "x": 0.4271,
+   "y": 0.1876
+  },
+  {
+   "type": "Møterom",
+   "code": "N 572",
+   "x": 0.5321,
+   "y": 0.1876
+  },
+  {
+   "type": "Møterom",
+   "code": "N 574",
+   "x": 0.6159,
+   "y": 0.1876
+  },
+  {
+   "type": "Møterom",
+   "code": "N 575",
+   "x": 0.6566,
+   "y": 0.1865
+  },
+  {
+   "type": "Møterom",
+   "code": "S 520",
+   "x": 0.6619,
+   "y": 0.8294
+  },
+  {
+   "type": "Møterom",
+   "code": "S 531",
+   "x": 0.4168,
+   "y": 0.8883
+  },
+  {
+   "type": "Sosial sone",
+   "code": "N 517",
+   "x": 0.5255,
+   "y": 0.3044
+  },
+  {
+   "type": "Sosial sone",
+   "code": "S 572",
+   "x": 0.5299,
+   "y": 0.7257
+  }
+ ],
+ "6": [
+  {
+   "type": "Datarom",
+   "code": "N 652",
+   "x": 0.3999,
+   "y": 0.3955
+  },
+  {
+   "type": "Multirom",
+   "code": "N 622",
+   "x": 0.2466,
+   "y": 0.3119
+  },
+  {
+   "type": "Multirom",
+   "code": "N 623",
+   "x": 0.3049,
+   "y": 0.3123
+  },
+  {
+   "type": "Multirom",
+   "code": "N 626",
+   "x": 0.3483,
+   "y": 0.2824
+  },
+  {
+   "type": "Multirom",
+   "code": "N 627",
+   "x": 0.3873,
+   "y": 0.2846
+  },
+  {
+   "type": "Multirom",
+   "code": "N 630",
+   "x": 0.6945,
+   "y": 0.3131
+  },
+  {
+   "type": "Multirom",
+   "code": "N 631",
+   "x": 0.7109,
+   "y": 0.2789
+  },
+  {
+   "type": "Multirom",
+   "code": "N 633",
+   "x": 0.7766,
+   "y": 0.3121
+  },
+  {
+   "type": "Multirom",
+   "code": "N 635",
+   "x": 0.7949,
+   "y": 0.279
+  },
+  {
+   "type": "Multirom",
+   "code": "N 636",
+   "x": 0.887,
+   "y": 0.1771
+  },
+  {
+   "type": "Multirom",
+   "code": "N 657",
+   "x": 0.2259,
+   "y": 0.3691
+  },
+  {
+   "type": "Multirom",
+   "code": "N 664",
+   "x": 0.2253,
+   "y": 0.2182
+  },
+  {
+   "type": "Multirom",
+   "code": "S 614",
+   "x": 0.6161,
+   "y": 0.7595
+  },
+  {
+   "type": "Multirom",
+   "code": "S 615",
+   "x": 0.6366,
+   "y": 0.7601
+  },
+  {
+   "type": "Multirom",
+   "code": "S 616",
+   "x": 0.6172,
+   "y": 0.83
+  },
+  {
+   "type": "Multirom",
+   "code": "S 617",
+   "x": 0.6357,
+   "y": 0.831
+  },
+  {
+   "type": "Multirom",
+   "code": "S 630",
+   "x": 0.4411,
+   "y": 0.8846
+  },
+  {
+   "type": "Multirom",
+   "code": "S 631",
+   "x": 0.3983,
+   "y": 0.8849
+  },
+  {
+   "type": "Multirom",
+   "code": "S 632",
+   "x": 0.3784,
+   "y": 0.885
+  },
+  {
+   "type": "Multirom",
+   "code": "S 648",
+   "x": 0.325,
+   "y": 0.7602
+  },
+  {
+   "type": "Multirom",
+   "code": "S 649",
+   "x": 0.3228,
+   "y": 0.8284
+  },
+  {
+   "type": "Møterom",
+   "code": "N 670",
+   "x": 0.4602,
+   "y": 0.2196
+  },
+  {
+   "type": "Møterom",
+   "code": "N 672",
+   "x": 0.5751,
+   "y": 0.2169
+  },
+  {
+   "type": "Møterom",
+   "code": "N 675",
+   "x": 0.6644,
+   "y": 0.2173
+  },
+  {
+   "type": "Møterom",
+   "code": "S 613",
+   "x": 0.5898,
+   "y": 0.7027
+  },
+  {
+   "type": "Møterom",
+   "code": "S 626",
+   "x": 0.5584,
+   "y": 0.8862
+  },
+  {
+   "type": "Møterom",
+   "code": "S 643",
+   "x": 0.3609,
+   "y": 0.6978
+  },
+  {
+   "type": "Møterom",
+   "code": "S 651",
+   "x": 0.5572,
+   "y": 0.7612
+  },
+  {
+   "type": "Sosial sone",
+   "code": "N 617",
+   "x": 0.5049,
+   "y": 0.2845
+  },
+  {
+   "type": "Sosial sone",
+   "code": "S 628",
+   "x": 0.493,
+   "y": 0.8698
+  }
+ ],
+ "7": [
+  {
+   "type": "Datarom",
+   "code": "N 752",
+   "x": 0.3997,
+   "y": 0.4022
+  },
+  {
+   "type": "Hvilerom",
+   "code": "S 748",
+   "x": 0.2839,
+   "y": 0.7625
+  },
+  {
+   "type": "Multirom",
+   "code": "N 721",
+   "x": 0.2132,
+   "y": 0.2867
+  },
+  {
+   "type": "Multirom",
+   "code": "N 722",
+   "x": 0.266,
+   "y": 0.3146
+  },
+  {
+   "type": "Multirom",
+   "code": "N 723",
+   "x": 0.3076,
+   "y": 0.3166
+  },
+  {
+   "type": "Multirom",
+   "code": "N 726",
+   "x": 0.3606,
+   "y": 0.2814
+  },
+  {
+   "type": "Multirom",
+   "code": "N 727",
+   "x": 0.414,
+   "y": 0.2871
+  },
+  {
+   "type": "Multirom",
+   "code": "N 730",
+   "x": 0.6851,
+   "y": 0.2924
+  },
+  {
+   "type": "Multirom",
+   "code": "N 731",
+   "x": 0.7202,
+   "y": 0.3147
+  },
+  {
+   "type": "Multirom",
+   "code": "N 733",
+   "x": 0.7615,
+   "y": 0.3156
+  },
+  {
+   "type": "Multirom",
+   "code": "N 735",
+   "x": 0.8062,
+   "y": 0.3156
+  },
+  {
+   "type": "Multirom",
+   "code": "N 736",
+   "x": 0.8875,
+   "y": 0.1805
+  },
+  {
+   "type": "Multirom",
+   "code": "N 757",
+   "x": 0.2259,
+   "y": 0.3724
+  },
+  {
+   "type": "Multirom",
+   "code": "N 764",
+   "x": 0.2258,
+   "y": 0.2218
+  },
+  {
+   "type": "Multirom",
+   "code": "S 714",
+   "x": 0.5844,
+   "y": 0.6584
+  },
+  {
+   "type": "Multirom",
+   "code": "S 715",
+   "x": 0.5988,
+   "y": 0.7103
+  },
+  {
+   "type": "Multirom",
+   "code": "S 716",
+   "x": 0.681,
+   "y": 0.7624
+  },
+  {
+   "type": "Multirom",
+   "code": "S 717",
+   "x": 0.7187,
+   "y": 0.7856
+  },
+  {
+   "type": "Multirom",
+   "code": "S 718",
+   "x": 0.6831,
+   "y": 0.8348
+  },
+  {
+   "type": "Multirom",
+   "code": "S 719",
+   "x": 0.7096,
+   "y": 0.8338
+  },
+  {
+   "type": "Multirom",
+   "code": "S 732",
+   "x": 0.3779,
+   "y": 0.7619
+  },
+  {
+   "type": "Multirom",
+   "code": "S 746",
+   "x": 0.2492,
+   "y": 0.7629
+  },
+  {
+   "type": "Multirom",
+   "code": "S 747",
+   "x": 0.2444,
+   "y": 0.8119
+  },
+  {
+   "type": "Multirom",
+   "code": "S 749",
+   "x": 0.3063,
+   "y": 0.8146
+  },
+  {
+   "type": "Møterom",
+   "code": "N 770",
+   "x": 0.4572,
+   "y": 0.2231
+  },
+  {
+   "type": "Møterom",
+   "code": "N 771",
+   "x": 0.5595,
+   "y": 0.2204
+  },
+  {
+   "type": "Møterom",
+   "code": "N 774",
+   "x": 0.6003,
+   "y": 0.2225
+  },
+  {
+   "type": "Møterom",
+   "code": "N 775",
+   "x": 0.6476,
+   "y": 0.2213
+  },
+  {
+   "type": "Møterom",
+   "code": "S 712",
+   "x": 0.7429,
+   "y": 0.7031
+  },
+  {
+   "type": "Møterom",
+   "code": "S 726",
+   "x": 0.5884,
+   "y": 0.8891
+  },
+  {
+   "type": "Møterom",
+   "code": "S 730",
+   "x": 0.5052,
+   "y": 0.8892
+  },
+  {
+   "type": "Møterom",
+   "code": "S 731",
+   "x": 0.4431,
+   "y": 0.8892
+  },
+  {
+   "type": "Møterom",
+   "code": "S 752",
+   "x": 0.5955,
+   "y": 0.7634
+  },
+  {
+   "type": "Prosjektrom",
+   "code": "S 728",
+   "x": 0.5663,
+   "y": 0.889
+  },
+  {
+   "type": "Sosial sone",
+   "code": "N 717",
+   "x": 0.5115,
+   "y": 0.2812
+  },
+  {
+   "type": "Sosial sone",
+   "code": "S 772",
+   "x": 0.5226,
+   "y": 0.6866
+  }
+ ],
+ "8": [
+  {
+   "type": "Datarom",
+   "code": "N 852",
+   "x": 0.4001,
+   "y": 0.4152
+  },
+  {
+   "type": "Multirom",
+   "code": "N 821",
+   "x": 0.2249,
+   "y": 0.2418
+  },
+  {
+   "type": "Multirom",
+   "code": "N 822",
+   "x": 0.2656,
+   "y": 0.3374
+  },
+  {
+   "type": "Multirom",
+   "code": "N 823",
+   "x": 0.2856,
+   "y": 0.3218
+  },
+  {
+   "type": "Multirom",
+   "code": "N 826",
+   "x": 0.3795,
+   "y": 0.3223
+  },
+  {
+   "type": "Multirom",
+   "code": "N 830",
+   "x": 0.6934,
+   "y": 0.3025
+  },
+  {
+   "type": "Multirom",
+   "code": "N 831",
+   "x": 0.7333,
+   "y": 0.3031
+  },
+  {
+   "type": "Multirom",
+   "code": "N 833",
+   "x": 0.7759,
+   "y": 0.2992
+  },
+  {
+   "type": "Multirom",
+   "code": "N 835",
+   "x": 0.793,
+   "y": 0.3012
+  },
+  {
+   "type": "Multirom",
+   "code": "N 836",
+   "x": 0.8861,
+   "y": 0.2027
+  },
+  {
+   "type": "Multirom",
+   "code": "N 856",
+   "x": 0.2075,
+   "y": 0.4371
+  },
+  {
+   "type": "Multirom",
+   "code": "N 857",
+   "x": 0.2095,
+   "y": 0.3936
+  },
+  {
+   "type": "Multirom",
+   "code": "N 864",
+   "x": 0.208,
+   "y": 0.1963
+  },
+  {
+   "type": "Møterom",
+   "code": "N 870",
+   "x": 0.4197,
+   "y": 0.2415
+  },
+  {
+   "type": "Møterom",
+   "code": "N 871",
+   "x": 0.5687,
+   "y": 0.2074
+  },
+  {
+   "type": "Møterom",
+   "code": "N 872",
+   "x": 0.5148,
+   "y": 0.2084
+  },
+  {
+   "type": "Møterom",
+   "code": "N 873",
+   "x": 0.4474,
+   "y": 0.208
+  },
+  {
+   "type": "Møterom",
+   "code": "N 874",
+   "x": 0.6159,
+   "y": 0.2075
+  },
+  {
+   "type": "Sosial sone",
+   "code": "N 817",
+   "x": 0.5236,
+   "y": 0.3702
+  }
+ ]
+}
