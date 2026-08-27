@@ -54,6 +54,10 @@ floorButton("7").click();
 assert.equal(markers().length, count("7"));
 assert.match(d.querySelector("#planimg").src, /plan-7\.png$/);
 
+// A search on a floor with no hits moves the plan to the floor that has them.
+search("857");
+assert.match(d.querySelector("#planimg").src, /plan-8\.png$/);
+
 // Search reaches other floors, and picking a hit travels there.
 const hits = search("372");
 assert.equal(hits.length, 1);

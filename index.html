@@ -89,9 +89,31 @@ header {
   border-bottom: 1px solid var(--line);
   background: var(--surface);
 }
-h1 { font-size: 16px; margin: 0; }
-h1 small { display: block; font-weight: 400; font-size: 12px; color: var(--ink-2); }
-header search { margin-left: auto; }
+h1 { margin: 0; }
+/* Floors on the left, everything else pushed to the right edge. */
+.tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-left: auto; }
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.floorbar { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+/* One line, cut off if it has to be: the count sits under the floor buttons, and
+   wrapping it would drag the whole header taller. */
+#status {
+  font-size: 11px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 button, input, select { font: inherit; color: inherit; }
 
@@ -111,12 +133,19 @@ button, input, select { font: inherit; color: inherit; }
   border-color: var(--ink);
 }
 
+/* Floating in the map's bottom left corner, opposite the zoom controls. */
 #theme {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 5;
   width: 32px;
   height: 32px;
-  border: 1px solid var(--ring);
-  border-radius: 6px;
-  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 2px 12px var(--ring);
   font-size: 15px;
   line-height: 1;
   cursor: pointer;
@@ -143,16 +172,26 @@ main {
 /* Both min-*: 0 are load-bearing. A grid item's automatic minimum size is its
    min-content size, so without these .map refuses to shrink below the full height
    of the plan, .viewport is handed that height, and nothing is left to scroll. */
-.map { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.map { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 
+/* Floating over the plan's bottom right corner rather than sitting in a bar of its
+   own: the plan gets the whole panel, and the controls stay where the thumb is. */
 .toolbar {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 5;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 16px;
+  padding: 6px 10px;
   font-size: 13px;
   color: var(--ink-2);
-  border-bottom: 1px solid var(--line);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 2px 12px var(--ring);
 }
 .toolbar button {
   flex: none;
@@ -165,9 +204,6 @@ main {
 }
 .toolbar button.wide { width: auto; padding: 0 10px; }
 #zoom { width: 140px; accent-color: var(--series-1); }
-/* One line, cut off if it has to be: wrapping the count into four lines on a phone
-   would push the map off the screen. */
-#status { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .viewport {
   flex: 1;
@@ -225,19 +261,39 @@ aside {
   padding: 12px max(14px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom))
            max(14px, env(safe-area-inset-left));
 }
-fieldset { border: 0; margin: 0 0 14px; padding: 0; }
-legend { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-muted); padding: 0 0 6px; }
+fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+
+/* Toggle pills, not a checkbox column: the checkbox itself is hidden but still
+   there, so the group keeps its keyboard and screen-reader behaviour and the
+   filled/outlined pill is only how the state looks. */
+#filters { display: flex; flex-wrap: wrap; gap: 4px; }
 .filters label {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 2px 0;
-  font-size: 13px;
+  gap: 6px;
+  padding: 4px 9px;
+  border: 1px solid var(--ring);
+  border-radius: 999px;
+  font-size: 12px;
+  white-space: nowrap;
   cursor: pointer;
 }
-.filters input { accent-color: var(--ink); margin: 0; }
-.swatch { width: 10px; height: 10px; border-radius: 3px; background: var(--c); flex: none; }
-.filters .n { margin-left: auto; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.filters label:hover { background: var(--plane); }
+.filters label:has(:checked) {
+  border-color: var(--c);
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+}
+.filters label:not(:has(:checked)) { color: var(--ink-muted); }
+.filters label:not(:has(:checked)) .swatch { opacity: .35; }
+.filters label:has(:focus-visible) { outline: 2px solid var(--ink); outline-offset: 1px; }
+.filters input {
+  position: absolute;
+  width: 1px; height: 1px;
+  opacity: 0;
+  margin: 0;
+}
+.swatch { width: 8px; height: 8px; border-radius: 2px; background: var(--c); flex: none; }
+.filters .n { color: var(--ink-muted); font-variant-numeric: tabular-nums; }
 
 h2 {
   font-size: 12px;
@@ -291,18 +347,16 @@ h2 {
      under it at fit zoom. The cap takes over once zooming makes it tall. */
   .viewport { flex: none; max-height: 55dvh; }
 
-  /* Row 1: title and theme. Row 2: floors and search, which shrinks to whatever
-     the floor buttons leave it. */
-  h1 { flex: 1; font-size: 15px; }
-  h1 small { display: inline; }
-  #theme { order: 1; }
-  .floors { order: 2; }
+  /* Row 1: the floors, with the room count under them. Then the type pills, and the
+     search box with the theme button beside it, wrapping as the width runs out. */
   .floors button { min-width: 36px; padding: 5px 4px; }
-  header search { order: 3; flex: 1; min-width: 90px; margin-left: 0; }
+  .tools { flex: 1 1 100%; margin-left: 0; }
+  header search { flex: 1; min-width: 120px; }
   #q { width: 100%; }
 
-  .toolbar label { display: none; }   /* the slider and ± say "zoom" on their own */
-  #zoom { flex: 1; width: auto; min-width: 60px; }
+  /* Two fingers already zoom the plan on a phone, and picking a room zooms in by
+     itself, so the slider only cost height. */
+  .toolbar { display: none; }
 }
 
 /* A phone on its side has the width for two columns and nowhere near the height
@@ -311,6 +365,10 @@ h2 {
   main { grid-template-columns: 1fr minmax(180px, 40%); grid-template-rows: 1fr; overflow: hidden; }
   .viewport { flex: 1; max-height: none; }
   aside { border-left: 1px solid var(--line); border-top: 0; overflow: auto; }
+  /* Height is what's scarce here, so the pills scroll sideways on one line next to
+     the search box instead of stacking three rows deep. */
+  .filters { flex: 1; min-width: 0; }
+  #filters { flex-wrap: nowrap; overflow-x: auto; }
 }
 
 /* Fingers, not a cursor: everything hittable grows to roughly 44px, and the pills
@@ -329,13 +387,26 @@ h2 {
 <body>
 
 <header>
-  <h1>Møteromskart <small>Grensesvingen 6</small></h1>
-  <nav class="floors" id="floors" aria-label="Etasje"></nav>
-  <search>
-    <input id="q" type="search" aria-label="Søk etter rom"
-           placeholder="Søk etter rom, f.eks. 372" autocomplete="off">
-  </search>
-  <button type="button" id="theme"></button>
+  <!-- The title lives in <title> and in the app name; on screen the floor buttons
+       took its place. It stays here for screen readers, which need a heading. -->
+  <h1 class="sr-only">Møteromskart – Grensesvingen 6</h1>
+  <div class="floorbar">
+    <nav class="floors" id="floors" aria-label="Etasje"></nav>
+    <span id="status" aria-live="polite"></span>
+  </div>
+  <!-- The type pills, the search box and the theme button travel as one block: on a
+       laptop they wrap to a second header row together instead of leaving the field
+       stranded on a line of its own. -->
+  <div class="tools">
+    <fieldset class="filters">
+      <legend class="sr-only">Romtyper</legend>
+      <div id="filters"></div>
+    </fieldset>
+    <search>
+      <input id="q" type="search" aria-label="Søk etter rom"
+             placeholder="Søk etter rom, f.eks. 372" autocomplete="off">
+    </search>
+  </div>
 </header>
 
 <main>
@@ -346,20 +417,16 @@ h2 {
       <input id="zoom" type="range" min="100" max="450" step="1" value="100">
       <button type="button" id="in" aria-label="Zoom inn">+</button>
       <button type="button" id="fit" class="wide">Tilpass</button>
-      <span id="status" aria-live="polite"></span>
     </div>
     <div class="viewport" id="viewport">
       <div class="plan" id="plan">
         <img id="planimg" alt="">
       </div>
     </div>
+    <button type="button" id="theme"></button>
   </section>
 
   <aside>
-    <fieldset class="filters">
-      <legend>Romtyper</legend>
-      <div id="filters"></div>
-    </fieldset>
     <div id="list"></div>
   </aside>
 </main>
@@ -431,9 +498,10 @@ function renderFilters() {
     cb.type = 'checkbox';
     cb.checked = !hidden.has(t);
     cb.onchange = () => { cb.checked ? hidden.delete(t) : hidden.add(t); render(); };
+    // On the label, not the swatch: the checked pill tints itself with it too.
+    l.style.setProperty('--c', `var(--series-${COLOR[t] || '3'})`);
     const sw = document.createElement('span');
     sw.className = 'swatch';
-    sw.style.setProperty('--c', `var(--series-${COLOR[t] || '3'})`);
     const n = document.createElement('span');
     n.className = 'n';
     n.textContent = counts[t];
@@ -693,7 +761,15 @@ el.viewport.addEventListener('wheel', e => {
 
 /* ---------- wiring ---------- */
 
-el.q.oninput = render;
+// A search covers every floor, and the list says so. Follow it on the plan too: if
+// nothing on the floor being shown matches, switch to the lowest floor that does,
+// rather than leaving an empty plan next to a list full of hits.
+el.q.oninput = () => {
+  const query = norm(el.q.value);
+  const hits = all().filter(r => matches(r, query));
+  if (query && hits.length && !hits.some(r => r.floor === floor)) setFloor(hits[0].floor);
+  else render();
+};
 el.zoom.oninput = () => setZoom(Number(el.zoom.value));
 document.getElementById('in').onclick = () => setZoom(Number(el.zoom.value) + 50);
 document.getElementById('out').onclick = () => setZoom(Number(el.zoom.value) - 50);
