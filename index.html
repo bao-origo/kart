@@ -693,10 +693,22 @@ function fitZoom() {
 // and filling the height puts the plan hard against its left one — half the drags a
 // finger can make move nothing at all, which reads as a dead map rather than as an
 // edge.
-function fit() {
-  setZoom(fitZoom());
+function centre() {
   el.viewport.scrollLeft = (el.viewport.scrollWidth - el.viewport.clientWidth) / 2;
   el.viewport.scrollTop = (el.viewport.scrollHeight - el.viewport.clientHeight) / 2;
+}
+
+function fit() {
+  setZoom(fitZoom());
+  centre();
+  // On a first visit the plan is still on its way when this runs, and an image with
+  // no height yet has no middle to find — the view would open at the top of the
+  // slack instead of on the plan. Aim again the moment it has a size: at the room a
+  // deep link asked for, whose own scroll missed for the same reason, or at the
+  // middle of the plan.
+  if (!el.img.complete) {
+    el.img.addEventListener('load', () => selected ? select(selected, false) : centre(), { once: true });
+  }
 }
 
 // Zooms around a point on screen (fingers, cursor) so it stays put; defaults to
