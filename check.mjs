@@ -205,6 +205,33 @@ assert.equal(panel.hidden, false);
 assert.equal(collapse.getAttribute("aria-expanded"), "true");
 assert.equal(d.querySelector("h1").closest("aside"), null, "the heading outlives a collapse");
 
+// On a phone the panel is a sheet: its grip toggles on a tap, and a drag snaps by
+// direction — up opens it, down shuts it, a short one leaves it as it was. (Only the
+// stylesheet knows this is a phone; the behaviour is the same wherever it runs.)
+const grip = d.getElementById("grip");
+const open = () => panel.classList.contains("open");
+const drag = (dy) => {
+  pointer("pointerdown", 9, 0, grip);          // the helper starts every one at y 100
+  for (const type of ["pointermove", "pointerup"]) {
+    w.dispatchEvent(new w.PointerEvent(type, { pointerId: 9, clientY: 100 - dy, bubbles: true }));
+  }
+};
+
+assert.equal(open(), false, "the sheet starts as the bar");
+grip.click();
+assert.ok(open());
+assert.equal(grip.getAttribute("aria-expanded"), "true");
+grip.click();
+assert.equal(open(), false);
+
+drag(60);
+assert.ok(open(), "dragged up");
+assert.equal(panel.style.height, "", "the snap hands the height back to the stylesheet");
+drag(-60);
+assert.equal(open(), false, "dragged down");
+drag(10);
+assert.equal(open(), false, "too short to snap the other way");
+
 // PWA shell: the manifest parses, every file it and the service worker name is
 // really there, and no path is absolute — the site is served from a subpath.
 const manifest = JSON.parse(fs.readFileSync(

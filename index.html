@@ -99,6 +99,27 @@ body {
   padding: 12px 0 8px;
   background: var(--surface);
 }
+
+/* The sheet's handle, and nowhere else: on any layout with room for a column, the
+   panel is that column and has nothing to drag. */
+.grip {
+  display: none;
+  width: 100%;
+  padding: 12px 0;
+  border: 0;
+  background: none;
+  cursor: grab;
+  touch-action: none;   /* the drag is ours, not the page's */
+}
+.grip::before {
+  content: "";
+  display: block;
+  width: 36px;
+  height: 4px;
+  margin: 0 auto;
+  border-radius: 999px;
+  background: var(--ink-muted);
+}
 /* One line, cut off if it has to be: the count sits under the floor buttons, and
    wrapping it would push the search box down. */
 #status {
@@ -153,6 +174,11 @@ button, input, select { font: inherit; color: inherit; }
 
 #q {
   width: 100%;
+  /* 16px, not the inherited 15: iOS zooms the whole page in when a field smaller
+     than that takes focus, and a zoomed page pans under one finger instead of
+     leaving the drag to the map. Not behind a media query — a device that reports
+     its pointer as fine would still do it. */
+  font-size: 16px;
   padding: 6px 10px;
   border: 1px solid var(--ring);
   border-radius: 6px;
@@ -173,6 +199,9 @@ main {
    outweighs the bare `main` rules in the media queries below, so the collapse holds
    in every layout without being repeated in each of them. */
 main:has(#panel[hidden]) { grid-template-columns: 1fr; }
+/* [hidden] is a UA rule, and the sheet's own `display: flex` further down outranks
+   it, so say it here where it cannot be lost. */
+#panel[hidden] { display: none; }
 
 /* ---- map ---- */
 
@@ -221,10 +250,34 @@ main:has(#panel[hidden]) { grid-template-columns: 1fr; }
   cursor: grab;
 }
 .viewport.dragging { cursor: grabbing; }
-.plan { position: relative; width: 100%; user-select: none; }
+/* Half a view of empty sheet on every side. A drag that runs into the plan's edge
+   stops dead and reads as a map that has stopped listening, so there is always
+   somewhere left to go — and never more than half a view of it, so the plan cannot
+   be pushed off the screen and lost.
+   A transparent border, of all things, because the other two ways of holding space
+   both have a catch: a margin's far side is the corner of scrollable overflow that
+   engines have historically disagreed about, and padding would stretch the box the
+   pills measure their percentages against. A border box is always scrollable, and
+   sits outside the padding box the pills use. content-box so the width still means
+   the image, which is what the zoom sets. */
+.plan {
+  position: relative;
+  box-sizing: content-box;
+  width: 100%;
+  /* Two values, so the width cannot ride along in the border shorthand. */
+  border: solid transparent;
+  border-width: 50svh 50vw;
+  user-select: none;
+}
 .plan img {
   display: block;
   width: 100%;
+  /* iOS pops the image action menu on a press that lingers, and that cancels the
+     pointer stream the pan runs on — a drag that starts slowly would die. The
+     touch-action here only repeats the viewport's, where WebKit has been shaky
+     about inheriting it down to the element actually touched. */
+  -webkit-touch-callout: none;
+  touch-action: none;
   filter: invert(var(--plan-invert)) hue-rotate(calc(var(--plan-invert) * 180deg));
 }
 
@@ -338,31 +391,55 @@ h2 {
   main { grid-template-columns: minmax(200px, 250px) 1fr; }
 }
 
-/* Phones and narrow windows: one column, the plan on top, the panel scrolling
-   underneath it with the page. */
+/* Two fingers already zoom the plan on a phone, and picking a room zooms in by
+   itself, so the slider only costs height. */
 @media (max-width: 720px) {
-  main { grid-template-columns: 1fr; grid-template-rows: auto auto; overflow: auto; }
-  /* The plan leads here, whichever side the panel is on when there is room for it. */
-  .map { order: -1; }
-  aside { border-right: 0; border-top: 1px solid var(--line); overflow: visible; }
-
-  /* The plan sizes itself — width: 100% of a fixed-aspect image — so letting the
-     viewport follow its content is what keeps a band of empty sheet from opening
-     under it at fit zoom. The cap takes over once zooming makes it tall. */
-  .viewport { flex: none; max-height: 55dvh; }
-
-  /* Two fingers already zoom the plan on a phone, and picking a room zooms in by
-     itself, so the slider only cost height. */
   .toolbar { display: none; }
 }
 
-/* A phone on its side has the width for two columns and nowhere near the height
-   for two rows, so it keeps the desktop layout. */
+/* A phone held upright: the plan takes the whole window, and the panel sits over its
+   bottom edge as a translucent bar — the floors, the count and the search box — that
+   the grip drags up into the room list. */
+@media (max-width: 720px) and (orientation: portrait) {
+  main { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+
+  aside {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 6;               /* over the buttons floating on the plan */
+    max-height: 88dvh;        /* also the ceiling on a drag, which sets a height */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;         /* the list inside scrolls; the sheet itself never does */
+    border: 0;
+    border-top: 1px solid var(--line);
+    border-radius: 14px 14px 0 0;
+    background: color-mix(in srgb, var(--surface) 80%, transparent);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 -2px 20px var(--ring);
+  }
+  /* Closed, the sheet is as tall as the bar it holds; open, it is a fixed slice of
+     the window with the list scrolling in whatever is left under the controls. */
+  aside.open { height: 70dvh; }
+  aside:not(.open) #list { display: none; }
+  #list { flex: 1; overflow: auto; overscroll-behavior: contain; }
+
+  .grip { display: block; }
+  /* The grip is the way to put the panel away here, so the button that does it on a
+     laptop only takes up plan. And since it is gone, a panel left [hidden] by a
+     wider layout has to come back, or nothing could bring it back. */
+  #collapse { display: none; }
+  #panel[hidden] { display: flex; }
+  /* The bottom left corner belongs to the sheet down here. */
+  #theme { top: 14px; bottom: auto; left: auto; right: 14px; }
+}
+
+/* A phone on its side has the width for two columns and nowhere near the height for
+   the sheet, so it keeps the desktop layout, only narrower. */
 @media (max-width: 720px) and (orientation: landscape) {
-  main { grid-template-columns: minmax(180px, 40%) 1fr; grid-template-rows: 1fr; overflow: hidden; }
-  .map { order: 0; }
-  .viewport { flex: 1; max-height: none; }
-  aside { border-right: 1px solid var(--line); border-top: 0; overflow: auto; }
+  main { grid-template-columns: minmax(180px, 40%) 1fr; }
 }
 
 /* Fingers, not a cursor: everything hittable grows to roughly 44px, and the pills
@@ -373,6 +450,7 @@ h2 {
   #q { padding: 9px 10px; }
   #zoom { height: 32px; }
   .type { padding: 8px 6px; }
+  .grip { padding: 14px 0; }
   .rooms button { padding: 9px 6px; }
   .marker { padding: 4px 8px; font-size: 12px; }
 }
@@ -387,6 +465,10 @@ h2 {
 
 <main>
   <aside id="panel">
+    <!-- The sheet's drag handle on a phone. A button too, so a tap or the keyboard
+         opens what a drag opens; display: none keeps it out of every other layout. -->
+    <button type="button" class="grip" id="grip" aria-expanded="false"
+            aria-controls="list" aria-label="Vis eller skjul romlisten"></button>
     <div class="controls">
       <nav class="floors" id="floors" aria-label="Etasje"></nav>
       <span id="status" aria-live="polite"></span>
@@ -435,6 +517,7 @@ const el = {
   theme: document.getElementById('theme'),
   panel: document.getElementById('panel'),
   collapse: document.getElementById('collapse'),
+  grip: document.getElementById('grip'),
   list: document.getElementById('list'),
   status: document.getElementById('status'),
 };
@@ -589,6 +672,33 @@ function render() {
 
 /* ---------- state ---------- */
 
+// Every floor is rendered at the same size by build.py, so the plan's shape is a
+// constant and needs no loaded image to measure.
+const PLAN_RATIO = 1820 / 2659;
+
+// Fit is the whole width — except in a window taller than the plan is at that width,
+// where the leftover band would be most of the screen. There it fills the height
+// instead and pans sideways. That case is a phone held upright.
+function fitZoom() {
+  const box = el.viewport.getBoundingClientRect();
+  if (box.height <= box.width) return 100;
+  // Where the panel is a sheet it lies over the bottom of the plan, and only a plan
+  // taller than the window by that much can be dragged out from under it. It also
+  // leaves the up and down drags something to move, which an exact fill does not.
+  const covered = getComputedStyle(el.panel).position === 'fixed' ? el.panel.offsetHeight : 0;
+  return Math.min(450, Math.max(100, 100 * (box.height + covered) / (box.width * PLAN_RATIO)));
+}
+
+// Fit, then park in the middle of whatever the plan overflows by. Against an edge —
+// and filling the height puts the plan hard against its left one — half the drags a
+// finger can make move nothing at all, which reads as a dead map rather than as an
+// edge.
+function fit() {
+  setZoom(fitZoom());
+  el.viewport.scrollLeft = (el.viewport.scrollWidth - el.viewport.clientWidth) / 2;
+  el.viewport.scrollTop = (el.viewport.scrollHeight - el.viewport.clientHeight) / 2;
+}
+
 // Zooms around a point on screen (fingers, cursor) so it stays put; defaults to
 // the middle of the viewport, which is what the slider and buttons want.
 function setZoom(v, anchorX, anchorY) {
@@ -604,14 +714,17 @@ function setZoom(v, anchorX, anchorY) {
   const x = anchorX - box.left;
   const y = anchorY - box.top;
   const scrolled = { x: el.viewport.scrollLeft, y: el.viewport.scrollTop };
+  // The empty border around the plan is a fixed size and does not scale with it, so
+  // it comes out of the arithmetic and goes back in afterwards.
+  const slack = { x: el.plan.clientLeft, y: el.plan.clientTop };
 
   el.zoom.value = String(Math.round(Math.min(450, Math.max(100, v))));
   el.plan.style.width = el.zoom.value + '%';
 
   const scale = Number(el.zoom.value) / from;
   if (scale !== 1) {
-    el.viewport.scrollLeft = (scrolled.x + x) * scale - x;
-    el.viewport.scrollTop = (scrolled.y + y) * scale - y;
+    el.viewport.scrollLeft = slack.x + (scrolled.x + x - slack.x) * scale - x;
+    el.viewport.scrollTop = slack.y + (scrolled.y + y - slack.y) * scale - y;
   }
 }
 
@@ -689,6 +802,59 @@ function setPanel(open) {
 
 el.collapse.onclick = () => setPanel(el.panel.hidden);
 setPanel(true);
+
+/* ---------- the sheet, on a phone ---------- */
+
+// Where the panel is a bar across the bottom of the plan, the grip drags it open and
+// shut. Dragging sets a height in px and follows the finger; letting go snaps, by
+// direction, to one of the two states CSS owns. Everywhere else the grip is
+// display: none and none of this runs.
+let grab = null;        // where the drag started, and the sheet's height there
+let swallowTap = false; // a drag ends in a click of its own; that one must not toggle
+
+function setSheet(open) {
+  el.panel.classList.toggle('open', open);
+  el.panel.style.height = '';   // back to the height the stylesheet picks
+  el.grip.setAttribute('aria-expanded', String(open));
+}
+
+el.grip.addEventListener('pointerdown', e => {
+  grab = {
+    y: e.clientY,
+    height: el.panel.offsetHeight,
+    open: el.panel.classList.contains('open'),
+    moved: false,
+  };
+});
+
+// On the window, like the map's pan: the finger leaves the grip long before the
+// gesture is over.
+addEventListener('pointermove', e => {
+  if (!grab) return;
+  const dy = grab.y - e.clientY;
+  if (!grab.moved && Math.abs(dy) < 4) return;
+  grab.moved = true;
+  // The list has to be in the sheet for the sheet to have anything to grow over.
+  el.panel.classList.add('open');
+  el.panel.style.height = Math.max(0, grab.height + dy) + 'px';
+});
+
+function endSheetDrag(e) {
+  if (!grab) return;
+  const { y, open, moved } = grab;
+  grab = null;
+  if (!moved) return;   // a tap: onclick below has it, and the keyboard with it
+  swallowTap = true;
+  const dy = y - e.clientY;
+  setSheet(Math.abs(dy) > 40 ? dy > 0 : open);
+}
+addEventListener('pointerup', endSheetDrag);
+addEventListener('pointercancel', endSheetDrag);
+
+el.grip.onclick = () => {
+  if (swallowTap) swallowTap = false;
+  else setSheet(!el.panel.classList.contains('open'));
+};
 
 /* ---------- drag to pan, pinch to zoom ---------- */
 
@@ -799,7 +965,7 @@ el.list.addEventListener('mouseout', () => highlight(null));
 el.zoom.oninput = () => setZoom(Number(el.zoom.value));
 document.getElementById('in').onclick = () => setZoom(Number(el.zoom.value) + 50);
 document.getElementById('out').onclick = () => setZoom(Number(el.zoom.value) - 50);
-document.getElementById('fit').onclick = () => setZoom(100);
+document.getElementById('fit').onclick = fit;
 window.onhashchange = fromHash;
 
 Promise.all([
@@ -808,8 +974,10 @@ Promise.all([
 ]).then(([r, n]) => {
   rooms = r;
   names = n;
-  setZoom(100);
+  // render() first: fit() measures the sheet, and the sheet is only as tall as the
+  // floor buttons render it.
   render();
+  fit();
   fromHash();
 }).catch(err => {
   el.list.textContent = 'Klarte ikke å laste romdata.';
