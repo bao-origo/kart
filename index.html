@@ -77,22 +77,6 @@ body {
   flex-direction: column;
 }
 
-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 20px;
-  /* Installed on a phone there is no browser chrome above us, so the header has to
-     clear the notch and the rounded corners itself. */
-  padding: max(10px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
-           10px max(16px, env(safe-area-inset-left));
-  border-bottom: 1px solid var(--line);
-  background: var(--surface);
-}
-h1 { margin: 0; }
-/* Floors on the left, everything else pushed to the right edge. */
-.tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-left: auto; }
-
 .sr-only {
   position: absolute;
   width: 1px; height: 1px;
@@ -102,9 +86,21 @@ h1 { margin: 0; }
   white-space: nowrap;
 }
 
-.floorbar { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+/* The floors, the count and the search box stay put while the room list scrolls
+   under them: with the list six floors long, the controls would otherwise be
+   somewhere above the top of the panel most of the time. */
+.controls {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 0 8px;
+  background: var(--surface);
+}
 /* One line, cut off if it has to be: the count sits under the floor buttons, and
-   wrapping it would drag the whole header taller. */
+   wrapping it would push the search box down. */
 #status {
   font-size: 11px;
   color: var(--ink-2);
@@ -117,10 +113,11 @@ h1 { margin: 0; }
 
 button, input, select { font: inherit; color: inherit; }
 
-.floors { display: flex; gap: 4px; }
+/* Six floors, six equal columns: in a panel this narrow, letting the buttons size
+   themselves is what makes them wrap onto a second row. */
+.floors { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
 .floors button {
-  min-width: 38px;
-  padding: 5px 8px;
+  padding: 5px 4px;
   border: 1px solid var(--ring);
   border-radius: 6px;
   background: transparent;
@@ -153,7 +150,7 @@ button, input, select { font: inherit; color: inherit; }
 #theme:hover { background: var(--plane); }
 
 #q {
-  width: min(46vw, 260px);
+  width: 100%;
   padding: 6px 10px;
   border: 1px solid var(--ring);
   border-radius: 6px;
@@ -165,6 +162,10 @@ main {
   min-height: 0;
   display: grid;
   grid-template-columns: 1fr minmax(240px, 300px);
+  /* There is no header above us any more, so installed on a phone the plan would
+     otherwise start under the notch. */
+  padding-top: env(safe-area-inset-top);
+  background: var(--surface);
 }
 
 /* ---- map ---- */
@@ -258,47 +259,37 @@ aside {
   background: var(--surface);
   overflow: auto;
   min-height: 0;   /* same reason as .map */
-  padding: 12px max(14px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom))
+  /* No padding at the top: it belongs to .controls, which is sticky, so the list
+     must not scroll through a gap above it. */
+  padding: 0 max(14px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom))
            max(14px, env(safe-area-inset-left));
 }
-fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
-
-/* Toggle pills, not a checkbox column: the checkbox itself is hidden but still
-   there, so the group keeps its keyboard and screen-reader behaviour and the
-   filled/outlined pill is only how the state looks. */
-#filters { display: flex; flex-wrap: wrap; gap: 4px; }
-.filters label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 9px;
-  border: 0;
-  border-radius: 999px;
-  font-size: 12px;
-  white-space: nowrap;
-  cursor: pointer;
-}
-/* No border, no fill: an unchecked type is the dimmed one — muted label, faded
-   swatch — and the hidden checkbox is what actually carries the state. */
-.filters label:not(:has(:checked)) { color: var(--ink-muted); }
-.filters label:not(:has(:checked)) .swatch { opacity: .35; }
-.filters label:has(:focus-visible) { outline: 2px solid var(--ink); outline-offset: 1px; }
-.filters input {
-  position: absolute;
-  width: 1px; height: 1px;
-  opacity: 0;
-  margin: 0;
-}
-.swatch { width: 8px; height: 8px; border-radius: 2px; background: var(--c); flex: none; }
-.filters .n { color: var(--ink-muted); font-variant-numeric: tabular-nums; }
 
 h2 {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: .04em;
-  color: var(--ink-muted);
   margin: 14px 0 4px;
 }
+/* The group heading is the type filter: clicking it hides that type's rooms from
+   the plan, and the heading stays behind — dimmed — as the way back. */
+.type {
+  display: block;
+  width: 100%;
+  padding: 3px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  /* The type's own colour, pushed towards the text colour: the fills these hues
+     were picked for carry white text, and as text on the panel they need the
+     extra contrast in both themes. */
+  color: color-mix(in oklab, var(--c) 70%, var(--ink));
+  cursor: pointer;
+}
+.type[aria-pressed="false"] { color: var(--ink-muted); }
+.type:hover { background: var(--plane); }
 .rooms { list-style: none; margin: 0; padding: 0; }
 .rooms button {
   display: flex;
@@ -333,8 +324,7 @@ h2 {
 }
 
 /* Phones and narrow windows: one column, the plan on top, the panel scrolling
-   underneath it with the page. Vertical space is the scarce one here, so the
-   header packs into two rows and the toolbar into one. */
+   underneath it with the page. */
 @media (max-width: 720px) {
   main { grid-template-columns: 1fr; grid-template-rows: auto auto; overflow: auto; }
   aside { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
@@ -343,13 +333,6 @@ h2 {
      viewport follow its content is what keeps a band of empty sheet from opening
      under it at fit zoom. The cap takes over once zooming makes it tall. */
   .viewport { flex: none; max-height: 55dvh; }
-
-  /* Row 1: the floors, with the room count under them. Then the type pills, and the
-     search box with the theme button beside it, wrapping as the width runs out. */
-  .floors button { min-width: 36px; padding: 5px 4px; }
-  .tools { flex: 1 1 100%; margin-left: 0; }
-  header search { flex: 1; min-width: 120px; }
-  #q { width: 100%; }
 
   /* Two fingers already zoom the plan on a phone, and picking a room zooms in by
      itself, so the slider only cost height. */
@@ -362,49 +345,22 @@ h2 {
   main { grid-template-columns: 1fr minmax(180px, 40%); grid-template-rows: 1fr; overflow: hidden; }
   .viewport { flex: 1; max-height: none; }
   aside { border-left: 1px solid var(--line); border-top: 0; overflow: auto; }
-  /* Height is what's scarce here, so the pills scroll sideways on one line next to
-     the search box instead of stacking three rows deep. */
-  .filters { flex: 1; min-width: 0; }
-  #filters { flex-wrap: nowrap; overflow-x: auto; }
 }
 
 /* Fingers, not a cursor: everything hittable grows to roughly 44px, and the pills
    on the plan grow with it. */
 @media (pointer: coarse) {
-  .floors button { min-width: 44px; min-height: 40px; }
+  .floors button { min-height: 40px; }
   #theme, .toolbar button { width: 40px; height: 40px; }
   #q { padding: 9px 10px; }
   #zoom { height: 32px; }
-  .filters label { padding: 7px 0; }
+  .type { padding: 8px 6px; }
   .rooms button { padding: 9px 6px; }
   .marker { padding: 4px 8px; font-size: 12px; }
 }
 </style>
 </head>
 <body>
-
-<header>
-  <!-- The title lives in <title> and in the app name; on screen the floor buttons
-       took its place. It stays here for screen readers, which need a heading. -->
-  <h1 class="sr-only">Møteromskart – Grensesvingen 6</h1>
-  <div class="floorbar">
-    <nav class="floors" id="floors" aria-label="Etasje"></nav>
-    <span id="status" aria-live="polite"></span>
-  </div>
-  <!-- The type pills, the search box and the theme button travel as one block: on a
-       laptop they wrap to a second header row together instead of leaving the field
-       stranded on a line of its own. -->
-  <div class="tools">
-    <fieldset class="filters">
-      <legend class="sr-only">Romtyper</legend>
-      <div id="filters"></div>
-    </fieldset>
-    <search>
-      <input id="q" type="search" aria-label="Søk etter rom"
-             placeholder="Søk etter rom, f.eks. 372" autocomplete="off">
-    </search>
-  </div>
-</header>
 
 <main>
   <section class="map">
@@ -417,13 +373,26 @@ h2 {
     </div>
     <div class="viewport" id="viewport">
       <div class="plan" id="plan">
-        <img id="planimg" alt="">
+        <!-- draggable="false": dragging an image is a native browser gesture, and it
+             cancels the pointer stream we pan with the moment the mouse moves. -->
+        <img id="planimg" alt="" draggable="false">
       </div>
     </div>
     <button type="button" id="theme"></button>
   </section>
 
   <aside>
+    <!-- The title lives in <title> and in the app name; on screen the floor buttons
+         took its place. It stays here for screen readers, which need a heading. -->
+    <h1 class="sr-only">Møteromskart – Grensesvingen 6</h1>
+    <div class="controls">
+      <nav class="floors" id="floors" aria-label="Etasje"></nav>
+      <span id="status" aria-live="polite"></span>
+      <search>
+        <input id="q" type="search" aria-label="Søk etter rom"
+               placeholder="Søk etter rom, f.eks. 372" autocomplete="off">
+      </search>
+    </div>
     <div id="list"></div>
   </aside>
 </main>
@@ -443,7 +412,6 @@ const el = {
   plan: document.getElementById('plan'),
   img: document.getElementById('planimg'),
   theme: document.getElementById('theme'),
-  filters: document.getElementById('filters'),
   list: document.getElementById('list'),
   status: document.getElementById('status'),
 };
@@ -464,11 +432,14 @@ function all() {
   return FLOOR_ORDER.flatMap(f => (rooms[f] || []).map(r => ({ ...r, floor: f })));
 }
 
+// Query only: a hidden type still gets its heading in the list, so hiding has to
+// stay out of the search itself.
 function matches(r, query) {
-  if (hidden.has(r.type)) return false;
   if (!query) return true;
   return norm(r.code + r.type + nameOf(r)).includes(query);
 }
+
+const shown = (r, query) => !hidden.has(r.type) && matches(r, query);
 
 /* ---------- rendering ---------- */
 
@@ -481,29 +452,6 @@ function renderFloors() {
     b.setAttribute('aria-current', String(f === floor));
     b.onclick = () => setFloor(f);
     return b;
-  }));
-}
-
-function renderFilters() {
-  const counts = {};
-  for (const r of all()) counts[r.type] = (counts[r.type] || 0) + 1;
-  const types = TYPE_ORDER.filter(t => counts[t]);
-
-  el.filters.replaceChildren(...types.map(t => {
-    const l = document.createElement('label');
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.checked = !hidden.has(t);
-    cb.onchange = () => { cb.checked ? hidden.delete(t) : hidden.add(t); render(); };
-    // On the label, not the swatch: the checked pill tints itself with it too.
-    l.style.setProperty('--c', `var(--series-${COLOR[t] || '3'})`);
-    const sw = document.createElement('span');
-    sw.className = 'swatch';
-    const n = document.createElement('span');
-    n.className = 'n';
-    n.textContent = counts[t];
-    l.append(cb, sw, t, n);
-    return l;
   }));
 }
 
@@ -559,20 +507,29 @@ function roomButton(r, showFloor) {
 
 function renderList(query) {
   const hits = (query ? all() : all().filter(r => r.floor === floor)).filter(r => matches(r, query));
-  if (!hits.length) {
-    el.list.replaceChildren(Object.assign(document.createElement('p'), {
-      className: 'empty',
-      textContent: 'Ingen treff.',
-    }));
-    return;
-  }
 
   const groups = [];
   for (const type of TYPE_ORDER) {
     const inGroup = hits.filter(r => r.type === type);
     if (!inGroup.length) continue;
+
+    // The heading doubles as the type's filter, so it is rendered whether the type
+    // is hidden or not — hidden, it is the only way back.
     const h = document.createElement('h2');
-    h.textContent = `${type} (${inGroup.length})`;
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'type';
+    toggle.style.setProperty('--c', `var(--series-${COLOR[type] || '3'})`);
+    toggle.setAttribute('aria-pressed', String(!hidden.has(type)));
+    toggle.textContent = `${type} (${inGroup.length})`;
+    toggle.onclick = () => {
+      hidden.has(type) ? hidden.delete(type) : hidden.add(type);
+      render();
+    };
+    h.append(toggle);
+    groups.push(h);
+    if (hidden.has(type)) continue;
+
     const ul = document.createElement('ul');
     ul.className = 'rooms';
     ul.append(...inGroup.map(r => {
@@ -580,7 +537,14 @@ function renderList(query) {
       li.append(roomButton(r, Boolean(query)));
       return li;
     }));
-    groups.push(h, ul);
+    groups.push(ul);
+  }
+
+  if (!groups.length) {
+    groups.push(Object.assign(document.createElement('p'), {
+      className: 'empty',
+      textContent: 'Ingen treff.',
+    }));
   }
   el.list.replaceChildren(...groups);
 }
@@ -763,7 +727,7 @@ el.viewport.addEventListener('wheel', e => {
 // rather than leaving an empty plan next to a list full of hits.
 el.q.oninput = () => {
   const query = norm(el.q.value);
-  const hits = all().filter(r => matches(r, query));
+  const hits = all().filter(r => shown(r, query));
   if (query && hits.length && !hits.some(r => r.floor === floor)) setFloor(hits[0].floor);
   else render();
 };
@@ -780,7 +744,6 @@ Promise.all([
   rooms = r;
   names = n;
   setZoom(100);
-  renderFilters();
   render();
   fromHash();
 }).catch(err => {

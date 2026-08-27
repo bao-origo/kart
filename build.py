@@ -15,10 +15,12 @@ import re
 
 import pymupdf
 
-# The drawing frame, without the title block and revision table at the bottom.
+# The drawing frame, without the title block and revision table at the bottom, and
+# without the INNHOLD legend column down the left edge.
 # 680 is just under the lowest wall on any floor (674 on the 8th), so the map ends
-# where the building does instead of on a band of empty sheet.
-CLIP = pymupdf.Rect(55, 25, 1140, 680)
+# where the building does instead of on a band of empty sheet. 183 is in the gutter
+# between the widest legend block (floor 4) and the leftmost wall.
+CLIP = pymupdf.Rect(183, 25, 1140, 680)
 DPI = 200
 
 ROOM_TYPE = re.compile(

@@ -41,8 +41,7 @@ const search = (text) => {
   return [...listed()];
 };
 const floorButton = (f) => [...d.querySelectorAll(".floors button")].find(b => b.textContent === f + ".");
-const typeFilter = (t) => [...d.querySelectorAll(".filters label")].find(l => l.textContent.includes(t)).querySelector("input");
-const toggle = (input, on) => { input.checked = on; input.onchange(); };
+const typeFilter = (t) => [...d.querySelectorAll(".type")].find(b => b.textContent.startsWith(t));
 
 // Opens on floor 3 with every room both mapped and listed.
 assert.equal(markers().length, count("3"));
@@ -67,12 +66,16 @@ hits[0].click();
 assert.equal(w.location.hash, "#3/N372");
 assert.equal(current().textContent, "N372");
 
-// Type filters hide markers.
+// The group headings are the type filters: clicking one hides that type's markers
+// and its rows, and the heading stays behind as the way back.
 search("");
-toggle(typeFilter("Multirom"), false);
+typeFilter("Multirom").click();
 assert.equal(markers().length, count("3") - count("3", "Multirom"));
-toggle(typeFilter("Multirom"), true);
+assert.equal(listed().length, count("3") - count("3", "Multirom"));
+assert.equal(typeFilter("Multirom").getAttribute("aria-pressed"), "false");
+typeFilter("Multirom").click();
 assert.equal(markers().length, count("3"));
+assert.equal(listed().length, count("3"));
 
 // Deep link selects a room on load.
 w.location.hash = "#8/N857";
@@ -108,6 +111,10 @@ assert.ok(wheel(0) === false, "pinch is preventDefault-ed, so the page doesn't z
 const zoomBeforePan = zoomValue();
 assert.ok(wheel(120, false) === false, "pan is preventDefault-ed as well");
 assert.equal(zoomValue(), zoomBeforePan, "panning must not change the zoom");
+
+// Mouse panning runs on the same pointer stream as touch, and a native image drag
+// would cancel it the moment the mouse moves, so the plan must not be draggable.
+assert.equal(d.querySelector("#planimg").draggable, false);
 
 // Two fingers spreading apart doubles the zoom.
 const pointer = (type, id, x, target = w) =>
