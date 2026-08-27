@@ -64,7 +64,7 @@ assert.match(hits[0].textContent, /N 372/);
 assert.match(hits[0].querySelector(".floor").textContent, /^3\./);
 hits[0].click();
 assert.equal(w.location.hash, "#3/N372");
-assert.equal(current().textContent, "N372");
+assert.equal(current().textContent, "N 372");
 
 // The group headings are the type filters: clicking one hides that type's markers
 // and its rows, and the heading stays behind as the way back.
@@ -77,16 +77,47 @@ typeFilter("Multirom").click();
 assert.equal(markers().length, count("3"));
 assert.equal(listed().length, count("3"));
 
+// Hovering the panel points at the plan: a type's heading lights every pill of that
+// type, a room row lights just its own, and leaving the panel clears it.
+const hot = () => [...markers()].filter(m => m.classList.contains("hot"));
+const hover = (element, type = "mouseover") =>
+  element.dispatchEvent(new w.MouseEvent(type, { bubbles: true }));
+
+const pointing = () => plan().classList.contains("pointing");
+hover(typeFilter("Møterom"));
+assert.equal(hot().length, count("3", "Møterom"));
+assert.ok(pointing(), "the pills that are not lit fade back");
+hover(typeFilter("Møterom"), "mouseout");
+assert.equal(hot().length, 0);
+assert.equal(pointing(), false);
+
+const row = [...listed()].find(b => b.textContent.includes("N 372"));
+hover(row);
+assert.deepEqual(hot().map(m => m.textContent), ["N 372"]);
+assert.ok(pointing());
+hover(row, "mouseout");
+assert.equal(hot().length, 0);
+
+// A row for a room on another floor lights nothing, so nothing may fade either. The
+// search stays on floor 3 because it has hits of its own here.
+const elsewhere = search("møterom").find(b =>
+  !b.querySelector(".floor").textContent.startsWith("3.") && /\d/.test(b.querySelector(".code").textContent));
+hover(elsewhere);
+assert.equal(hot().length, 0);
+assert.equal(pointing(), false);
+hover(elsewhere, "mouseout");
+search("");
+
 // Deep link selects a room on load.
 w.location.hash = "#8/N857";
 w.onhashchange();
 assert.match(d.querySelector("#planimg").src, /plan-8\.png$/);
-assert.equal(current().textContent, "N857");
+assert.equal(current().textContent, "N 857");
 
 // Zoom drives the plan width. Pills keep their room number at every zoom.
 d.getElementById("fit").click();
 assert.equal(plan().style.width, "100%");
-assert.equal(current().textContent, "N857");
+assert.equal(current().textContent, "N 857");
 d.getElementById("in").click();
 d.getElementById("in").click();
 assert.equal(plan().style.width, "200%");

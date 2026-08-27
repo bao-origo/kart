@@ -251,7 +251,16 @@ main:has(#panel[hidden]) { grid-template-columns: 1fr; }
 .marker[data-color="1"] { --c: var(--series-1); }
 .marker[data-color="2"] { --c: var(--series-2); }
 .marker[data-color="3"] { --c: var(--series-3); }
-.marker:hover, .marker:focus-visible { z-index: 3; scale: 1.25; }
+.marker:hover, .marker:focus-visible, .marker.hot { z-index: 3; scale: 1.25; }
+/* Pointed at from the panel — a room row, or a whole type's heading — the pills wear
+   the ring the selected one wears, so the answer to "where is that" is on the plan
+   before anything is clicked. */
+.marker.hot { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--c); }
+/* Searched past, or standing next to what the panel is pointing at: either way the
+   pill steps back rather than disappearing, since it is still a room on this floor.
+   The one being pointed at comes back to full even if the search had faded it. */
+.marker.faded, .plan.pointing .marker:not(.hot) { opacity: .25; }
+.plan.pointing .marker.hot { opacity: 1; }
 .marker[aria-current="true"] {
   z-index: 4;
   scale: 1.35;
@@ -478,16 +487,21 @@ function renderMarkers(query) {
       b.className = 'marker';
       b.dataset.color = COLOR[r.type] || '3';
       b.dataset.id = id(r);
+      b.dataset.type = r.type;
       b.style.setProperty('--x', (r.x * 100).toFixed(2) + '%');
       b.style.setProperty('--y', (r.y * 100).toFixed(2) + '%');
-      b.textContent = slug(r.code) || '•';
+      // The number exactly as it is written everywhere else, space included; only
+      // the deep link and the marker's own id run it through slug().
+      b.textContent = r.code || '•';
       b.title = `${r.type} ${label(r)}`;
       b.setAttribute('aria-label', `${r.type} ${label(r)}`);
-      if (query && !matches(r, query)) b.style.opacity = '.25';
+      if (query && !matches(r, query)) b.classList.add('faded');
       if (id(r) === selected) b.setAttribute('aria-current', 'true');
       b.onclick = () => select(id(r), false);
       return b;
     });
+  // The pills these applied to are gone; the class would fade the new ones instead.
+  el.plan.classList.remove('pointing');
   el.plan.replaceChildren(el.img, ...markers);
   el.status.textContent = `${markers.length} rom i ${floor}. etasje`;
 }
@@ -533,6 +547,7 @@ function renderList(query) {
     const toggle = document.createElement('button');
     toggle.type = 'button';
     toggle.className = 'type';
+    toggle.dataset.type = type;
     toggle.style.setProperty('--c', `var(--series-${COLOR[type] || '3'})`);
     toggle.setAttribute('aria-pressed', String(!hidden.has(type)));
     toggle.textContent = `${type} (${inGroup.length})`;
@@ -762,6 +777,25 @@ el.q.oninput = () => {
   if (query && hits.length && !hits.some(r => r.floor === floor)) setFloor(hits[0].floor);
   else render();
 };
+// Hovering the panel points at the plan: a room row lights its own pill, a type's
+// heading lights every pill of that type. Delegated on the list — it is rebuilt on
+// every render — and mouseover/mouseout because those bubble, unlike mouseenter.
+function highlight(target) {
+  const room = target?.dataset.id;
+  const type = target?.dataset.type;
+  let lit = 0;
+  for (const marker of el.plan.querySelectorAll('.marker')) {
+    const hot = room ? marker.dataset.id === room : Boolean(type) && marker.dataset.type === type;
+    marker.classList.toggle('hot', hot);
+    lit += hot;
+  }
+  // Only fade the rest once something is actually lit: a row can point at a room on
+  // another floor, and that must not dim the whole plan for nothing.
+  el.plan.classList.toggle('pointing', lit > 0);
+}
+el.list.addEventListener('mouseover', e => highlight(e.target.closest('button')));
+el.list.addEventListener('mouseout', () => highlight(null));
+
 el.zoom.oninput = () => setZoom(Number(el.zoom.value));
 document.getElementById('in').onclick = () => setZoom(Number(el.zoom.value) + 50);
 document.getElementById('out').onclick = () => setZoom(Number(el.zoom.value) - 50);
