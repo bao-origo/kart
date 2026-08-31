@@ -86,7 +86,7 @@ body {
   white-space: nowrap;
 }
 
-/* The floors, the count and the search box stay put while the room list scrolls
+/* The floors and the search box stay put while the room list scrolls
    under them: with the list six floors long, the controls would otherwise be
    somewhere above the top of the panel most of the time. */
 .controls {
@@ -119,17 +119,6 @@ body {
   margin: 0 auto;
   border-radius: 999px;
   background: var(--ink-muted);
-}
-/* One line, cut off if it has to be: the count sits under the floor buttons, and
-   wrapping it would push the search box down. */
-#status {
-  font-size: 11px;
-  color: var(--ink-2);
-  font-variant-numeric: tabular-nums;
-  max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 button, input, select { font: inherit; color: inherit; }
@@ -471,7 +460,6 @@ h2 {
             aria-controls="list" aria-label="Vis eller skjul romlisten"></button>
     <div class="controls">
       <nav class="floors" id="floors" aria-label="Etasje"></nav>
-      <span id="status" aria-live="polite"></span>
       <search>
         <input id="q" type="search" aria-label="Søk etter rom"
                placeholder="Søk etter rom, f.eks. 372" autocomplete="off">
@@ -519,7 +507,6 @@ const el = {
   collapse: document.getElementById('collapse'),
   grip: document.getElementById('grip'),
   list: document.getElementById('list'),
-  status: document.getElementById('status'),
 };
 
 let rooms = {};       // floor -> [room]
@@ -586,7 +573,6 @@ function renderMarkers(query) {
   // The pills these applied to are gone; the class would fade the new ones instead.
   el.plan.classList.remove('pointing');
   el.plan.replaceChildren(el.img, ...markers);
-  el.status.textContent = `${markers.length} rom i ${floor}. etasje`;
 }
 
 function roomButton(r, showFloor) {
