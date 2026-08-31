@@ -25,21 +25,21 @@ DPI = 200
 
 ROOM_TYPE = re.compile(
     r"^(Møterom|Multirom|Prosjektrom|Hvilerom|Stillerom|Pod ?1p|Web-?rom|Datarom|Sosial sone"
-    r"|Podcast webrom|HC ?-?WC|WC|Print ?/ ?[Kk]opi|Print|Kopi)$"
+    r"|Podcast webrom|HC ?-?WC|WC|Print ?/ ?[Kk]opi|Print)$"
 )
 ROOM_CODE = re.compile(r"^[NS]?\s?\d{3}$")
 
 # The accessible toilet — "HCWC" on most floors, "HC-WC" on the fourth — is a WC like
 # the rest and groups with them; the name is what says which one it is.
-# The print room is labelled "Print/Kopi" on one floor, "Print" or "Kopi" on the next.
-# They are the same room type, so they answer to the one name the legend tallies them
-# under.
+# The print room is labelled "Print/Kopi" on one floor and "Print" on the next; both
+# are the same room type, so they answer to the one name the legend tallies them under.
+# A bare "Kopi" is not one of them — the eighth floor has that word standing on its own
+# between two rooms, and no print room to go with it.
 LABEL_ALIAS = {
     "HCWC": ("WC", "HC-WC"),
     "HC-WC": ("WC", "HC-WC"),
     "Print/Kopi": ("Print/kopi", None),
     "Print": ("Print/kopi", None),
-    "Kopi": ("Print/kopi", None),
 }
 
 # Codes sit right below their label, so weight vertical distance heavier.
