@@ -24,22 +24,45 @@ CLIP = pymupdf.Rect(183, 25, 1140, 680)
 DPI = 200
 
 ROOM_TYPE = re.compile(
-    r"^(Møterom|Multirom|Prosjektrom|Hvilerom|Stillerom|Pod ?1p|Web-?rom|Datarom|Sosial sone)$"
+    r"^(Møterom|Multirom|Prosjektrom|Hvilerom|Stillerom|Pod ?1p|Web-?rom|Datarom|Sosial sone"
+    r"|Podcast webrom|HC ?-?WC|WC)$"
 )
 ROOM_CODE = re.compile(r"^[NS]?\s?\d{3}$")
+
+# The drawings spell the accessible toilet "HCWC" on most floors and "HC-WC" on the
+# fourth; one label per room type keeps the filters from splitting in two.
+TYPE_ALIAS = {"HCWC": "HC-WC"}
 
 # Codes sit right below their label, so weight vertical distance heavier.
 MATCH_RADIUS = 60
 
+# Rooms the drawings leave ambiguous, keyed by floor and position. Without these the
+# nearest-code match reaches past the room's own walls and lands on a neighbour, and
+# every rebuild would quietly undo the correction.
+FIXUPS = {
+    # The pod has no number of its own; N 302 belongs to the corridor next to it.
+    ("3", 0.5177, 0.284): {"code": None},
+    # 406 is the anteroom in front of the toilets, not this meeting room.
+    ("4", 0.6538, 0.405): {"code": None},
+}
+
 
 def lines(page):
-    """Yield (text, centre x, centre y) for every text line in the drawing area."""
+    """Yield (text, centre x, centre y) for every text line in the drawing area.
+
+    A block that holds more than one line is also yielded joined, so a label the
+    drawing wraps ("Podcast" / "webrom") is seen as the one name it reads as.
+    """
     for block in page.get_text("dict")["blocks"]:
         if block["type"] != 0:
             continue
-        for line in block["lines"]:
-            text = "".join(span["text"] for span in line["spans"]).strip()
-            x0, y0, x1, y1 = line["bbox"]
+        found = [
+            ("".join(span["text"] for span in line["spans"]).strip(), line["bbox"])
+            for line in block["lines"]
+        ]
+        if len(found) > 1:
+            found.append((" ".join(text for text, _ in found), block["bbox"]))
+        for text, (x0, y0, x1, y1) in found:
             x, y = (x0 + x1) / 2, (y0 + y1) / 2
             if x < 190 and y < 330:
                 continue  # INNHOLD legend: "Multirom: 7" is a tally, not a room
@@ -48,11 +71,11 @@ def lines(page):
             yield text, x, y
 
 
-def rooms_on(page):
+def rooms_on(page, floor):
     labels, codes = [], []
     for text, x, y in lines(page):
         if ROOM_TYPE.match(text):
-            labels.append((text, x, y))
+            labels.append((TYPE_ALIAS.get(text, text), x, y))
         elif ROOM_CODE.match(text):
             codes.append([text, x, y, False])
 
@@ -69,14 +92,14 @@ def rooms_on(page):
             nearest[3] = True
         else:
             nearest = None
-        out.append(
-            {
-                "type": kind,
-                "code": " ".join(nearest[0].split()) if nearest else None,
-                "x": round((x - CLIP.x0) / CLIP.width, 4),
-                "y": round((y - CLIP.y0) / CLIP.height, 4),
-            }
-        )
+        room = {
+            "type": kind,
+            "code": " ".join(nearest[0].split()) if nearest else None,
+            "x": round((x - CLIP.x0) / CLIP.width, 4),
+            "y": round((y - CLIP.y0) / CLIP.height, 4),
+        }
+        room.update(FIXUPS.get((floor, room["x"], room["y"]), {}))
+        out.append(room)
     out.sort(key=lambda r: (r["type"], r["code"] or "zzz"))
     return out
 
@@ -101,7 +124,7 @@ def main():
         pixmap = page.get_pixmap(dpi=DPI, clip=CLIP)
         pixmap.save(os.path.join(here, f"plan-{floor}.png"))
 
-        rooms = floors[floor] = rooms_on(page)
+        rooms = floors[floor] = rooms_on(page, floor)
         unnamed = [r["type"] for r in rooms if not r["code"]]
         print(
             f"floor {floor}: {len(rooms)} rooms, {pixmap.width}x{pixmap.height} px"
