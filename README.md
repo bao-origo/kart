@@ -1,4 +1,4 @@
-# Møteromskart – Grensesvingen 6
+# Kart – Grensesvingen 6
 
 Static site that turns the architect's floor plan PDFs into a browsable map of the
 meeting rooms on floors 3–8. Pick a floor, search for a room number, see where it is.
