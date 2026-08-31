@@ -672,14 +672,17 @@ const PLAN_RATIO = 1820 / 2659;
 // Fit is the whole width — except in a window taller than the plan is at that width,
 // where the leftover band would be most of the screen. There it fills the height
 // instead and pans sideways. That case is a phone held upright.
+// Where the panel is a sheet it lies over the bottom of the plan; in every other
+// layout it is a column beside the plan and covers none of it.
+const covered = () => getComputedStyle(el.panel).position === 'fixed' ? el.panel.offsetHeight : 0;
+
 function fitZoom() {
   const box = el.viewport.getBoundingClientRect();
   if (box.height <= box.width) return 100;
-  // Where the panel is a sheet it lies over the bottom of the plan, and only a plan
-  // taller than the window by that much can be dragged out from under it. It also
-  // leaves the up and down drags something to move, which an exact fill does not.
-  const covered = getComputedStyle(el.panel).position === 'fixed' ? el.panel.offsetHeight : 0;
-  return Math.min(450, Math.max(100, 100 * (box.height + covered) / (box.width * PLAN_RATIO)));
+  // Only a plan taller than the window by what the sheet covers can be dragged out
+  // from under it. It also leaves the up and down drags something to move, which an
+  // exact fill does not.
+  return Math.min(450, Math.max(100, 100 * (box.height + covered()) / (box.width * PLAN_RATIO)));
 }
 
 // Fit, then park in the middle of whatever the plan overflows by. Against an edge —
@@ -688,7 +691,11 @@ function fitZoom() {
 // edge.
 function centre() {
   el.viewport.scrollLeft = (el.viewport.scrollWidth - el.viewport.clientWidth) / 2;
-  el.viewport.scrollTop = (el.viewport.scrollHeight - el.viewport.clientHeight) / 2;
+  // The middle to aim for is the middle of what can be seen, and the sheet lies over
+  // the bottom of that. Splitting the whole viewport instead parks the middle of the
+  // plan under the sheet, leaving a band of empty above it — the plan reads as sitting
+  // too low, by half the sheet.
+  el.viewport.scrollTop = (el.viewport.scrollHeight - el.viewport.clientHeight + covered()) / 2;
 }
 
 function fit() {
@@ -751,7 +758,13 @@ function setFloor(f, target = null) {
   selected = target;
   render();
   if (target) select(target, true);
-  else history.replaceState(null, '', `#${floor}`);
+  else {
+    // Every floor is the same drawing at the same size, but a floor picked with no
+    // room in mind is a fresh look at the building, not a continuation of wherever the
+    // last one was dragged to — which on a phone can be a corner off screen.
+    centre();
+    history.replaceState(null, '', `#${floor}`);
+  }
 }
 
 function fromHash() {
