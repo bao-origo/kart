@@ -40,6 +40,9 @@
   --series-1: #2974d0;  /* Møterom */
   --series-2: #be542a;  /* Multirom */
   --series-3: #15855d;  /* øvrige romtyper */
+  /* Dark enough for white text on either surface, so unlike its neighbours it needs
+     no separate dark-mode value. */
+  --series-4: #98488c;  /* WC */
   --plan-invert: 0;
 }
 /* The script in <head> always resolves data-theme to light or dark, so the system
@@ -293,6 +296,7 @@ main:has(#panel[hidden]) { grid-template-columns: 1fr; }
 .marker[data-color="1"] { --c: var(--series-1); }
 .marker[data-color="2"] { --c: var(--series-2); }
 .marker[data-color="3"] { --c: var(--series-3); }
+.marker[data-color="4"] { --c: var(--series-4); }
 .marker:hover, .marker:focus-visible, .marker.hot { z-index: 3; scale: 1.25; }
 /* Pointed at from the panel — a room row, or a whole type's heading — the pills wear
    the ring the selected one wears, so the answer to "where is that" is on the plan
@@ -490,10 +494,11 @@ h2 {
 
 <script>
 const FLOOR_ORDER = ['3', '4', '5', '6', '7', '8'];
-const TYPE_ORDER = ['Møterom', 'Multirom', 'Prosjektrom', 'Pod 1p', 'Podcast webrom', 'Sosial sone', 'Hvilerom', 'Datarom', 'WC', 'HC-WC'];
-// Three validated categorical hues; everything past the two meeting-room types
-// shares slot 3. The exact type is always spelled out in text, never colour alone.
-const COLOR = { 'Møterom': '1', 'Multirom': '2' };
+const TYPE_ORDER = ['Møterom', 'Multirom', 'WC', 'HC-WC', 'Prosjektrom', 'Pod 1p', 'Podcast webrom', 'Sosial sone', 'Hvilerom', 'Datarom'];
+// Four validated categorical hues. The two meeting-room types and the toilets are
+// what people scan the plan for, so they get their own; everything else shares slot
+// 3. The exact type is always spelled out in text, never colour alone.
+const COLOR = { 'Møterom': '1', 'Multirom': '2', 'WC': '4', 'HC-WC': '4' };
 
 const el = {
   floors: document.getElementById('floors'),
