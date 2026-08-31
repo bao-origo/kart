@@ -29,9 +29,9 @@ ROOM_TYPE = re.compile(
 )
 ROOM_CODE = re.compile(r"^[NS]?\s?\d{3}$")
 
-# The drawings spell the accessible toilet "HCWC" on most floors and "HC-WC" on the
-# fourth; one label per room type keeps the filters from splitting in two.
-TYPE_ALIAS = {"HCWC": "HC-WC"}
+# The accessible toilet — "HCWC" on most floors, "HC-WC" on the fourth — is a WC like
+# the rest and groups with them; the name is what says which one it is.
+LABEL_ALIAS = {"HCWC": ("WC", "HC-WC"), "HC-WC": ("WC", "HC-WC")}
 
 # Codes sit right below their label, so weight vertical distance heavier.
 MATCH_RADIUS = 60
@@ -75,12 +75,12 @@ def rooms_on(page, floor):
     labels, codes = [], []
     for text, x, y in lines(page):
         if ROOM_TYPE.match(text):
-            labels.append((TYPE_ALIAS.get(text, text), x, y))
+            labels.append((*LABEL_ALIAS.get(text, (text, None)), x, y))
         elif ROOM_CODE.match(text):
             codes.append([text, x, y, False])
 
     out = []
-    for kind, x, y in labels:
+    for kind, name, x, y in labels:
         nearest, best = None, math.inf
         for code in codes:
             if code[3]:
@@ -98,6 +98,8 @@ def rooms_on(page, floor):
             "x": round((x - CLIP.x0) / CLIP.width, 4),
             "y": round((y - CLIP.y0) / CLIP.height, 4),
         }
+        if name:
+            room["name"] = name
         room.update(FIXUPS.get((floor, room["x"], room["y"]), {}))
         out.append(room)
     out.sort(key=lambda r: (r["type"], r["code"] or "zzz"))

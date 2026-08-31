@@ -37,13 +37,17 @@ in `build.py`.
 
 ## Naming rooms
 
-The drawings only carry numbers. To show real names, add them to `names.json`:
+The drawings carry numbers and almost no names. To show real names, add them to
+`names.json`:
 
 ```json
 { "N 381": "Bjørvika", "S 353": "Sognsvann" }
 ```
 
-Runtime only — no rebuild needed.
+Runtime only — no rebuild needed, and it overrides anything the drawing named. The
+one thing the drawing does name is the accessible toilet: it is a `WC` like the rest,
+so it sits in their group and on their colour, and carries `"name": "HC-WC"` to say
+which one it is. `LABEL_ALIAS` in `build.py` is where that pairing lives.
 
 ## Installing it as an app
 
