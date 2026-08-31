@@ -264,6 +264,12 @@ main:has(#panel[hidden]) { grid-template-columns: 1fr; }
 .plan img {
   display: block;
   width: 100%;
+  /* The plan's shape, held here so the box has its full height before the image does.
+     Changing floors points this element at a PNG that has never been loaded, and until
+     it arrives the image has no size of its own to give the box — centre() would then
+     aim at a plan 20px tall and the real one would come in below the window. Same two
+     numbers as PLAN_RATIO; build.py renders every floor at this size. */
+  aspect-ratio: 2659 / 1820;
   /* iOS pops the image action menu on a press that lingers, and that cancels the
      pointer stream the pan runs on — a drag that starts slowly would die. The
      touch-action here only repeats the viewport's, where WebKit has been shaky

@@ -2,7 +2,7 @@
 // a GitHub Pages project subpath as from the domain root.
 //
 // Bump CACHE when the shell changes; the old cache is dropped on activate.
-const CACHE = 'kart-v1';
+const CACHE = 'kart-v2';
 
 // The shell only. The plan PNGs are ~500 kB each and there are six of them, so
 // they are cached as they are opened instead of on install — every floor you have
