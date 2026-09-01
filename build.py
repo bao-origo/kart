@@ -45,6 +45,20 @@ LABEL_ALIAS = {
 # Codes sit right below their label, so weight vertical distance heavier.
 MATCH_RADIUS = 60
 
+# Rooms the drawings do not label at all, so nothing here can be read off the sheet.
+# The eighth floor's coffee machine is named on the machine and nowhere else.
+EXTRA = {
+    "8": [
+        {
+            "type": "Kaffemaskiner",
+            "code": None,
+            "x": 0.3014,
+            "y": 0.7904,
+            "name": "Coffee Queen",
+        }
+    ],
+}
+
 # Rooms the drawings leave ambiguous, keyed by floor and position. Without these the
 # nearest-code match reaches past the room's own walls and lands on a neighbour, and
 # every rebuild would quietly undo the correction.
@@ -111,6 +125,7 @@ def rooms_on(page, floor):
             room["name"] = name
         room.update(FIXUPS.get((floor, room["x"], room["y"]), {}))
         out.append(room)
+    out.extend(EXTRA.get(floor, []))
     out.sort(key=lambda r: (r["type"], r["code"] or "zzz"))
     return out
 

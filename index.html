@@ -427,6 +427,10 @@ main:has(#panel[hidden]) { grid-template-columns: 1fr; }
   background: var(--c);
   cursor: pointer;
 }
+/* The cup is the whole label, with no room number beside it to set the pill's size:
+   at the 11px the numbers are set in it reads as a speck. Attribute selector, so
+   the touch-target rule further down does not shrink it back. */
+.marker[data-type="Kaffemaskiner"] { padding: 1px 5px; font-size: 17px; }
 .marker[data-color="1"] { --c: var(--series-1); }
 .marker[data-color="2"] { --c: var(--series-2); }
 .marker[data-color="3"] { --c: var(--series-3); }
@@ -663,7 +667,7 @@ h2 {
 
 <script>
 const FLOOR_ORDER = ['3', '4', '5', '6', '7', '8'];
-const TYPE_ORDER = ['Print/kopi', 'Møterom', 'Multirom', 'WC', 'Prosjektrom', 'Pod 1p', 'Podcast webrom', 'Sosial sone', 'Hvilerom', 'Datarom'];
+const TYPE_ORDER = ['Print/kopi', 'Kaffemaskiner', 'Møterom', 'Multirom', 'WC', 'Prosjektrom', 'Pod 1p', 'Podcast webrom', 'Sosial sone', 'Hvilerom', 'Datarom'];
 // Five validated categorical hues. The two meeting-room types, the toilets and the
 // print room are what people scan the plan for, so they get their own; everything
 // else shares slot 3. The exact type is always spelled out in text, never colour
@@ -749,7 +753,9 @@ function renderMarkers(query) {
       b.style.setProperty('--y', (r.y * 100).toFixed(2) + '%');
       // The number exactly as it is written everywhere else, space included; only
       // the deep link and the marker's own id run it through slug().
-      b.textContent = r.code || '•';
+      // A coffee machine has no number to show, and a cup says what it is at a
+      // glance where a bare dot says nothing. aria-label still spells the type out.
+      b.textContent = r.code || (r.type === 'Kaffemaskiner' ? '☕' : '•');
       b.title = `${r.type} ${label(r)}`;
       b.setAttribute('aria-label', `${r.type} ${label(r)}`);
       if (query && !matches(r, query)) b.classList.add('faded');

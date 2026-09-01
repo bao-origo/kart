@@ -57,6 +57,13 @@ assert.match(d.querySelector("#planimg").src, /plan-7\.png$/);
 search("857");
 assert.match(d.querySelector("#planimg").src, /plan-8\.png$/);
 
+// The numberless coffee machine wears a cup instead of the dot every other
+// unnumbered room gets.
+assert.deepEqual(
+  [...markers()].filter(m => m.dataset.type === "Kaffemaskiner").map(m => m.textContent),
+  ["☕"],
+);
+
 // Search reaches other floors, and picking a hit travels there.
 const hits = search("372");
 assert.equal(hits.length, 1);
@@ -289,7 +296,7 @@ assert.ok(pointing());
 key(from, "ArrowUp");
 assert.equal(active(from).dataset.ref, "3/304");
 key(from, "End");
-assert.equal(active(from).dataset.ref, "8/N874", "the last room of the last floor");
+assert.equal(active(from).dataset.ref, "8/Kaffemaskiner-0.3014", "the last room of the last floor");
 key(from, "Home");
 assert.equal(active(from).dataset.ref, "3/304");
 
