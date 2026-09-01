@@ -430,7 +430,28 @@ main:has(#panel[hidden]) { grid-template-columns: 1fr; }
 /* The cup is the whole label, with no room number beside it to set the pill's size:
    at the 11px the numbers are set in it reads as a speck. Attribute selector, so
    the touch-target rule further down does not shrink it back. */
-.marker[data-type="Kaffemaskiner"] { padding: 1px 5px; font-size: 17px; }
+.marker[data-type="Kaffemaskiner"] {
+  /* No pill: the cup is the whole marker, so the pill's fill and ring come off and the
+     box is left as the touch target, held still so the anchor point does not move. */
+  padding: 0;
+  width: 31px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  background: none;
+  box-shadow: none;
+  font-size: 17px;
+  line-height: 1;
+  /* The job the pill's surface ring did: hold the cup clear of the line work printed
+     underneath it, now that nothing is painted behind the glyph. */
+  filter: drop-shadow(0 0 2px var(--surface)) drop-shadow(0 0 2px var(--surface));
+}
+/* Singled out — hovered, pointed at from the panel, or standing on a route — with no
+   pill to wear a ring, the cup's own size is what says so. */
+.marker[data-type="Kaffemaskiner"]:is(:hover, :focus-visible, .hot, .via, [aria-current="true"]) {
+  box-shadow: none;
+  font-size: 24px;
+}
 .marker[data-color="1"] { --c: var(--series-1); }
 .marker[data-color="2"] { --c: var(--series-2); }
 .marker[data-color="3"] { --c: var(--series-3); }
