@@ -232,6 +232,192 @@ assert.equal(open(), false, "dragged down");
 drag(10);
 assert.equal(open(), false, "too short to snap the other way");
 
+// Each end of a walk opens a listbox of every room. It is not a <select>, so the rest
+// of this section is what a <select> would have done for free: opening, the arrows,
+// type-ahead, committing — and the one thing it would not, lighting the room under the
+// pointer on the plan.
+const from = d.getElementById("from");
+const to = d.getElementById("to");
+const clear = d.getElementById("clear");
+const line = () => d.querySelector("#route-line .line")?.getAttribute("d") ?? null;
+const points = () => line().slice(1).split(" L").map(p => p.split(" ").map(Number));
+const note = () => d.getElementById("route-note").textContent;
+
+// jsdom has no top layer, so the popover is stubbed down to a hidden flag. What is
+// under test is the listbox behaviour, not the browser's own popover.
+for (const box of d.querySelectorAll(".picker")) {
+  let shown = false;
+  const toggle = (newState) => box.dispatchEvent(Object.assign(new w.Event("toggle"), { newState }));
+  box.showPopover = () => { shown = true; toggle("open"); };
+  box.hidePopover = () => { shown = false; toggle("closed"); };
+  box.matches = (selector) => selector === ":popover-open"
+    ? shown
+    : w.Element.prototype.matches.call(box, selector);
+}
+const listFor = (end) => d.getElementById(end.id + "-list");
+const optionFor = (end, ref) => listFor(end).querySelector(`[data-ref="${ref}"]`);
+const active = (end) => listFor(end).querySelector(".picker-option.active");
+const key = (end, k) => end.dispatchEvent(new w.KeyboardEvent("keydown", { key: k, bubbles: true, cancelable: true }));
+const openList = (end) => { end.dispatchEvent(new w.PointerEvent("pointerdown", { bubbles: true })); end.click(); };
+const travel = (a, b) => {
+  openList(from);
+  optionFor(from, a).click();
+  openList(to);
+  optionFor(to, b).click();
+};
+
+const total = Object.values(rooms).flat().length;
+assert.equal(listFor(from).querySelectorAll('[role="option"]').length, total, "every room");
+assert.equal(listFor(from).querySelectorAll('[role="group"]').length, 6, "grouped by floor");
+assert.equal(line(), null, "nothing to draw until both ends are picked");
+assert.equal(clear.hidden, true, "nothing to clear either");
+assert.match(from.textContent, /Velg rom/);
+
+// Opening lands on the first room, and says on the button which row that is.
+floorButton("3").click();
+openList(from);
+assert.equal(from.getAttribute("aria-expanded"), "true");
+assert.equal(active(from).dataset.ref, "3/304", "the first room in the list");
+assert.equal(from.getAttribute("aria-activedescendant"), active(from).id);
+
+// The arrows walk it, Home and End jump, and every step lights that room on the plan —
+// the reason this is a listbox and not a <select>.
+key(from, "ArrowDown");
+assert.equal(active(from).dataset.ref, "3/361");
+assert.deepEqual(hot().map(m => m.textContent), ["361"], "the arrows point at the plan");
+assert.ok(pointing());
+key(from, "ArrowUp");
+assert.equal(active(from).dataset.ref, "3/304");
+key(from, "End");
+assert.equal(active(from).dataset.ref, "8/N874", "the last room of the last floor");
+key(from, "Home");
+assert.equal(active(from).dataset.ref, "3/304");
+
+// Type-ahead matches anywhere in the row, so a room number finds its room.
+for (const c of "372") key(from, c);
+assert.equal(active(from).dataset.ref, "3/N372");
+assert.deepEqual(hot().map(m => m.textContent), ["N 372"]);
+
+// The pointer picks the same rows the arrows do.
+hover(optionFor(from, "3/N373"));
+assert.equal(active(from).dataset.ref, "3/N373");
+assert.deepEqual(hot().map(m => m.textContent), ["N 373"]);
+
+// Escape belongs to the popover: the field closes and the plan stops pointing.
+listFor(from).hidePopover();
+assert.equal(from.getAttribute("aria-expanded"), "false");
+assert.equal(hot().length, 0);
+assert.equal(pointing(), false);
+assert.match(from.textContent, /Velg rom/, "closing without committing picks nothing");
+
+// Enter commits the active row. One end alone already rings its room and travels to
+// its floor, without waiting for the other.
+openList(from);
+for (const c of "570") key(from, c);
+key(from, "Enter");
+assert.equal(from.getAttribute("aria-expanded"), "false");
+assert.match(from.textContent, /N 570 · 5\. et\./);
+assert.match(d.querySelector("#planimg").src, /plan-5\.png$/);
+assert.deepEqual([...markers()].filter(m => m.classList.contains("via")).map(m => m.textContent),
+  ["N 570"]);
+assert.equal(line(), null, "one end is not a walk");
+assert.equal(clear.hidden, false);
+
+// Reopening starts on the room already picked, not back at the top.
+openList(from);
+assert.equal(active(from).dataset.ref, "5/N570");
+assert.equal(active(from).getAttribute("aria-selected"), "true");
+listFor(from).hidePopover();
+clear.click();
+assert.match(from.textContent, /Velg rom/);
+
+// Both ends on one floor: one path, and the map goes to that floor.
+travel("3/N372", "3/S351");
+assert.match(d.querySelector("#planimg").src, /plan-3\.png$/);
+assert.match(note(), /N 372.*S 351.*3\. etasje/);
+assert.ok(d.getElementById("via").disabled, "one floor, so there is no way up to pick");
+
+// It starts at one room and ends at the other, and every leg between runs along a
+// corridor — so each is either horizontal or vertical, never a line through walls.
+const path = points();
+const near = (a, b) => Math.abs(a - b) < 1;
+const room = (floor, code) => rooms[floor].find(r => r.code === code);
+const onPlan = (r) => [r.x * 2659, r.y * 1820];
+assert.ok(near(path.at(0)[0], onPlan(room("3", "N 372"))[0]));
+assert.ok(near(path.at(-1)[1], onPlan(room("3", "S 351"))[1]));
+for (let i = 1; i < path.length; i++) {
+  assert.ok(near(path[i][0], path[i - 1][0]) || near(path[i][1], path[i - 1][1]),
+    `leg ${i} runs diagonally, so it is not following a corridor`);
+}
+// North wing to south wing has to pass the lifts — the only way between them.
+assert.ok(path.some(([x, y]) => near(x, 0.372 * 2659) && near(y, 0.542 * 1820)));
+
+// Two floors: two walks with a ride between them, and only the one on the floor being
+// shown is drawn. The floors in between have nothing to draw and say so.
+travel("3/N372", "7/S751");
+assert.match(d.querySelector("#planimg").src, /plan-3\.png$/, "it opens where the walk starts");
+assert.match(note(), /heisen/);
+const leaving = points();
+assert.ok(near(leaving.at(-1)[0], 0.327 * 2659), "the first leg ends at the lift");
+assert.equal(d.querySelectorAll("#route-line circle").length, 1, "the lift is marked");
+
+floorButton("7").click();
+assert.ok(near(points().at(0)[0], 0.327 * 2659), "the second leg starts at the lift");
+floorButton("5").click();
+assert.equal(line(), null, "a floor the walk only passes has nothing to draw");
+assert.match(note(), /Velg 3\. eller 7\. etasje/);
+
+// The stair is the other way between floors, and the walk goes there instead.
+floorButton("3").click();
+const via = d.getElementById("via");
+via.value = "trapp";
+via.onchange();
+assert.match(note(), /trappen/);
+assert.ok(near(points().at(-1)[1], 0.677 * 1820), "the first leg ends at the stair");
+via.value = "heis";
+via.onchange();
+assert.ok(near(points().at(-1)[1], 0.542 * 1820), "and back at the lift");
+
+// The two ends wear a ring of their own, which a passing mouse must not clear.
+const ends = () => [...markers()].filter(m => m.classList.contains("via")).map(m => m.textContent);
+assert.deepEqual(ends(), ["N 372"]);
+hover(typeFilter("Møterom"));
+hover(typeFilter("Møterom"), "mouseout");
+assert.deepEqual(ends(), ["N 372"], "hovering the panel leaves the route alone");
+
+// The walk is in the link, so it can be pasted to someone else. The floor and the
+// room picked on it stay where they were, ahead of the query.
+assert.equal(w.location.hash, "#3?fra=3/N372&til=7/S751");
+via.value = "trapp";
+via.onchange();
+assert.equal(w.location.hash, "#3?fra=3/N372&til=7/S751&via=trapp");
+[...markers()].find(m => m.textContent === "N 373").click();
+assert.equal(w.location.hash, "#3/N373?fra=3/N372&til=7/S751&via=trapp");
+
+// And reading it back restores the walk, the way up and the fields that show them.
+w.location.hash = "#7/S751?fra=4/S422&til=6/N672&via=trapp";
+w.onhashchange();
+assert.match(from.textContent, /S 422 · 4\. et\./);
+assert.match(to.textContent, /N 672 · 6\. et\./);
+assert.equal(via.value, "trapp");
+assert.match(note(), /S 422.*trappen.*N 672/);
+assert.equal(line(), null, "floor 7 is neither end of that walk");
+
+// A link from before the route fields existed still means what it did.
+w.location.hash = "#8/N857";
+w.onhashchange();
+assert.equal(current().textContent, "N 857");
+assert.match(from.textContent, /Velg rom/, "no walk in the link, no walk on the map");
+assert.equal(line(), null);
+
+// Clearing puts both ends back and takes the walk out of the link.
+travel("3/N372", "7/S751");
+clear.click();
+assert.equal(line(), null);
+assert.equal(note(), "");
+assert.match(to.textContent, /Velg rom/);
+assert.equal(w.location.hash.includes("fra="), false);
+
 // PWA shell: the manifest parses, every file it and the service worker name is
 // really there, and no path is absolute — the site is served from a subpath.
 const manifest = JSON.parse(fs.readFileSync(

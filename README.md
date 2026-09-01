@@ -49,6 +49,54 @@ one thing the drawing does name is the accessible toilet: it is a `WC` like the 
 so it sits in their group and on their colour, and carries `"name": "HC-WC"` to say
 which one it is. `LABEL_ALIAS` in `build.py` is where that pairing lives.
 
+## Routes between two rooms
+
+The **Fra** / **Til** fields in the panel draw the walk from one room to the other on
+the plan. Moving over a room in either list — with the pointer or with the arrow keys —
+lights that room's pill on the plan, so you can see where a room is before picking it.
+**Nullstill** empties both ends.
+
+That is why neither field is a `<select>`. A native option list is drawn by the OS,
+outside the page, and nothing there can see the pointer move over it — `appearance:
+base-select` fixes that in Chrome and Edge, and nowhere else. So each field is a
+`role="combobox"` button opening a `popover` `role="listbox"`, which puts the rooms in
+the page where they can be hovered. The `popover` attribute carries the top layer, the
+light dismiss and Escape; `wirePicker()` in `index.html` carries everything a `<select>`
+would otherwise have given for free — the arrows, `Home`/`End`, `PageUp`/`PageDown`,
+type-ahead, `Tab` and `Enter` to commit, `aria-activedescendant`, and scrolling the
+active row into view. Focus stays on the button the whole time, so there is no focus to
+move in and out of the list.
+
+Type-ahead matches anywhere in a row rather than only at its start, because people know
+room numbers: typing `372` finds N 372. Rooms on a floor other than the one on screen
+light nothing — the plan shows one floor at a time — which is the same as hovering a
+room row in the panel.
+
+The corridors the walk follows are the `CORRIDORS` list in `index.html`: a handful
+of axis-aligned segments in the same 0–1 coordinates `rooms.json` uses. Every floor is
+the same drawing at the same size, so one skeleton serves all six. Each room joins it
+at the nearest point on the nearest corridor, and the shortest way through is what gets
+drawn.
+
+Two floors means two walks with a ride or a climb between them: the three shafts left
+of the middle are the lifts and the room below them is the stair, both serving floors
+3–8. **Via** picks between them, and is disabled when both rooms are on one floor. The
+map shows one floor at a time, so it draws the leg for the floor you are on and the
+line under the fields says which floors the rest is on.
+
+The walk is in the link, after the floor and the room the older links already carried:
+
+```
+…/kart/#3/N372?fra=3/N372&til=7/S751&via=trapp
+```
+
+`via` is left out when it is the lift. A `#3/N372` from before the fields existed still
+means exactly what it did.
+
+The skeleton is traced off the drawing by eye — enough to say which way round the
+building to walk, not a survey. If the plans are ever redrawn, retrace it: overlay the
+segments on `plan-3.png` and look.
+
 ## Installing it as an app
 
 The site is a PWA: Chrome and Edge offer "Install" in the address bar, Android
@@ -76,7 +124,7 @@ rsvg-convert -w 180 -h 180 icon.svg -o apple-touch-icon.png   # iOS ignores SVG
 
 ```sh
 python3 -m http.server 8000     # then open http://localhost:8000
-npm i jsdom && node check.mjs   # smoke test: floors, search, filters, deep links, zoom
+npm i jsdom && node check.mjs   # smoke test: floors, search, filters, routes, deep links, zoom
 ```
 
 ## Licence
@@ -90,4 +138,5 @@ Set **Settings → Pages → Source** to **GitHub Actions** once, or the workflo
 nothing to publish to.
 
 All paths are relative, so it works from a project subpath. Deep links look like
-`…/kart/#3/N372` and are safe to paste into Slack.
+`…/kart/#3/N372`, or `…/kart/#3?fra=3/N372&til=7/S751` for a walk, and are safe to
+paste into Slack.

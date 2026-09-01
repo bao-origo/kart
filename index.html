@@ -165,7 +165,7 @@ button, input, select { font: inherit; color: inherit; }
 #collapse { top: 14px; }
 #theme:hover, #collapse:hover { background: var(--plane); }
 
-#q {
+#q, .route select, .route .end {
   width: 100%;
   /* 16px, not the inherited 15: iOS zooms the whole page in when a field smaller
      than that takes focus, and a zoomed page pans under one finger instead of
@@ -177,6 +177,106 @@ button, input, select { font: inherit; color: inherit; }
   border-radius: 6px;
   background: var(--plane);
 }
+
+/* The two ends of a walk. A label column narrow enough that the fields keep the
+   rest, which in a panel this narrow is all the room they get. */
+.route {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+/* Held open at one line whether or not there is anything in it. Arming an end writes
+   the note, filling one reveals Nullstill, and either appearing would otherwise push
+   the room list down between the two clicks that pick a walk — moving the row out from
+   under the cursor just as it is about to be clicked. */
+.route-foot {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 1lh;
+  font-size: 12px;
+}
+.route-note { margin: 0; }
+
+/* Each end is a button that opens its own list of rooms. Not a <select>: an option
+   list drawn by the OS sits outside the page, where nothing can see the pointer move
+   over it, and lighting the room under the pointer on the plan is the point. */
+.route .end {
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.route .end:hover { background: var(--surface); }
+.route .end.empty { color: var(--ink-muted); }
+.route .end[aria-expanded="true"] {
+  border-color: var(--series-1);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--series-1) 30%, transparent);
+}
+
+/* The list itself. open() places it against its button, which is why the insets are
+   cleared here — a popover's own default is to sit in the middle of the window. */
+.picker {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  /* As wide as its longest room, but never narrower than the field it hangs off nor
+     wider than the window — a room list that scrolls sideways is a room list nobody
+     can read. open() sets the min-width, since only it knows the field. */
+  width: max-content;
+  max-width: min(90vw, 380px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 8px 28px var(--ring);
+  color: var(--ink);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.picker-floor {
+  padding: 8px 8px 2px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--ink-muted);
+}
+.picker-option {
+  overflow: hidden;
+  padding: 5px 8px;
+  border-radius: 6px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+/* The arrows and the pointer land on the same class, so the list never shows two rows
+   as the current one — and it is filled, the way a native option list marks the row
+   the keyboard is on, not a tint that has to be hunted for. */
+.picker-option.active { background: var(--series-1); color: #fff; }
+.picker-option[aria-selected="true"] { font-weight: 600; }
+
+#clear {
+  flex: none;
+  /* No padding above or below: any and the button is taller than the line the row is
+     held open at, and revealing it shifts the list after all. */
+  padding: 0 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 12px;
+  color: var(--ink-2);
+  text-decoration: underline;
+  cursor: pointer;
+}
+#clear:hover { background: var(--plane); }
 
 main {
   flex: 1;
@@ -280,6 +380,33 @@ main:has(#panel[hidden]) { grid-template-columns: 1fr; }
   filter: invert(var(--plan-invert)) hue-rotate(calc(var(--plan-invert) * 180deg));
 }
 
+/* The walk, drawn over the plan. Its viewBox is the plan's own pixel size, so the
+   box it fills has exactly that shape and nothing is stretched; non-scaling-stroke
+   then keeps the line the same weight at every zoom, the way the pills keep their
+   size. inset: 0 is the padding box — the same box the pills measure against, not
+   the empty border around it. */
+.route-line {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* No z-index: the pills are positioned too and mostly sit at auto, so a stacking
+     order of its own here would put the line over them instead of under. Its place
+     in the plan — after the image, before the pills — already says where it goes. */
+  pointer-events: none;
+}
+.route-line path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+/* Drawn twice: a casing in the surface colour first, so the line reads over the
+   line work of the plan underneath it. */
+.route-line .casing { stroke: var(--surface); stroke-width: 7; opacity: .85; }
+.route-line .line { stroke: var(--series-1); stroke-width: 3; }
+.route-line circle { fill: var(--series-1); stroke: var(--surface); stroke-width: 8; }
+
 .marker {
   position: absolute;
   left: var(--x);
@@ -305,11 +432,13 @@ main:has(#panel[hidden]) { grid-template-columns: 1fr; }
 .marker[data-color="3"] { --c: var(--series-3); }
 .marker[data-color="4"] { --c: var(--series-4); }
 .marker[data-color="5"] { --c: var(--series-5); }
-.marker:hover, .marker:focus-visible, .marker.hot { z-index: 3; scale: 1.25; }
+.marker:hover, .marker:focus-visible, .marker.hot, .marker.via { z-index: 3; scale: 1.25; }
 /* Pointed at from the panel — a room row, or a whole type's heading — the pills wear
    the ring the selected one wears, so the answer to "where is that" is on the plan
    before anything is clicked. */
-.marker.hot { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--c); }
+/* .via is the same ring, worn by the two ends of a route for as long as it is set —
+   its own class rather than .hot, which a passing mouse clears. */
+.marker.hot, .marker.via { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--c); }
 /* Searched past, or standing next to what the panel is pointing at: either way the
    pill steps back rather than disappearing, since it is still a room on this floor.
    The one being pointed at comes back to full even if the search had faded it. */
@@ -424,7 +553,9 @@ h2 {
   /* Closed, the sheet is as tall as the bar it holds; open, it is a fixed slice of
      the window with the list scrolling in whatever is left under the controls. */
   aside.open { height: 70dvh; }
-  aside:not(.open) #list { display: none; }
+  /* Shut, the sheet is a bar: the floors and the search box, and nothing that would
+     cost the plan another 80px of height. The route fields come up with the list. */
+  aside:not(.open) #list, aside:not(.open) .route { display: none; }
   #list { flex: 1; overflow: auto; overscroll-behavior: contain; }
 
   .grip { display: block; }
@@ -451,6 +582,7 @@ h2 {
   #q { padding: 9px 10px; }
   #zoom { height: 32px; }
   .type { padding: 8px 6px; }
+  .picker-option { padding: 9px 8px; }
   .grip { padding: 14px 0; }
   .rooms button { padding: 9px 6px; }
   .marker { padding: 4px 8px; font-size: 12px; }
@@ -472,6 +604,27 @@ h2 {
             aria-controls="list" aria-label="Vis eller skjul romlisten"></button>
     <div class="controls">
       <nav class="floors" id="floors" aria-label="Etasje"></nav>
+      <div class="route">
+        <!-- aria-labelledby names the button after the word beside it and then its own
+             text, so it reads "Fra, N 372 · 3. et." rather than just the room. -->
+        <span id="from-label">Fra</span>
+        <button type="button" class="end empty" id="from" role="combobox"
+                aria-labelledby="from-label from" aria-haspopup="listbox"
+                aria-controls="from-list" aria-expanded="false">Velg rom</button>
+        <span id="to-label">Til</span>
+        <button type="button" class="end empty" id="to" role="combobox"
+                aria-labelledby="to-label to" aria-haspopup="listbox"
+                aria-controls="to-list" aria-expanded="false">Velg rom</button>
+        <label for="via">Via</label>
+        <select id="via">
+          <option value="heis">Heisen</option>
+          <option value="trapp">Trappen</option>
+        </select>
+        <div class="route-foot">
+          <p class="route-note" id="route-note" aria-live="polite"></p>
+          <button type="button" id="clear" hidden>Nullstill</button>
+        </div>
+      </div>
       <search>
         <input id="q" type="search" aria-label="Søk etter rom"
                placeholder="Søk etter rom, f.eks. 372" autocomplete="off">
@@ -493,12 +646,20 @@ h2 {
         <!-- draggable="false": dragging an image is a native browser gesture, and it
              cancels the pointer stream we pan with the moment the mouse moves. -->
         <img id="planimg" alt="" draggable="false">
+        <!-- The route, when there is one. The viewBox is the plan's pixel size, so
+             its coordinates are the same ones rooms.json holds, scaled. -->
+        <svg class="route-line" id="route-line" viewBox="0 0 2659 1820" aria-hidden="true"></svg>
       </div>
     </div>
     <button type="button" id="collapse" aria-expanded="true" aria-controls="panel"></button>
     <button type="button" id="theme"></button>
   </section>
 </main>
+
+<!-- The two room lists, outside the panel because a popover lives in the top layer and
+     has nothing to do with the panel's scrolling. Filled by renderPickers(). -->
+<div class="picker" id="from-list" popover role="listbox" aria-labelledby="from-label"></div>
+<div class="picker" id="to-list" popover role="listbox" aria-labelledby="to-label"></div>
 
 <script>
 const FLOOR_ORDER = ['3', '4', '5', '6', '7', '8'];
@@ -521,6 +682,14 @@ const el = {
   collapse: document.getElementById('collapse'),
   grip: document.getElementById('grip'),
   list: document.getElementById('list'),
+  from: document.getElementById('from'),
+  to: document.getElementById('to'),
+  via: document.getElementById('via'),
+  fromList: document.getElementById('from-list'),
+  toList: document.getElementById('to-list'),
+  clear: document.getElementById('clear'),
+  line: document.getElementById('route-line'),
+  note: document.getElementById('route-note'),
 };
 
 let rooms = {};       // floor -> [room]
@@ -528,6 +697,8 @@ let names = {};       // "N 381" -> "Bjørvika"
 let floor = '3';
 let selected = null;  // slug
 let hidden = new Set();
+let trip = { from: null, to: null };   // the two ends of the walk being shown
+let via = 'heis';     // which of the two ways between floors the walk takes
 
 const slug = code => code ? code.replace(/\s+/g, '') : '';
 const norm = s => (s || '').toLowerCase().replace(/\s+/g, '');
@@ -588,7 +759,7 @@ function renderMarkers(query) {
     });
   // The pills these applied to are gone; the class would fade the new ones instead.
   el.plan.classList.remove('pointing');
-  el.plan.replaceChildren(el.img, ...markers);
+  el.plan.replaceChildren(el.img, el.line, ...markers);
 }
 
 function roomButton(r, showFloor) {
@@ -670,6 +841,8 @@ function render() {
   renderFloors();
   renderMarkers(query);
   renderList(query);
+  drawRoute();
+  ringEnds();    // after the markers: it rings the route's ends, and they are rebuilt above
 }
 
 /* ---------- state ---------- */
@@ -759,7 +932,7 @@ function select(target, zoomIn) {
   // clicked on the map points at its own row. 'nearest' so a row that is already
   // visible — the usual case when the click came from the panel — stays put.
   el.list.querySelector('[aria-current="true"]')?.scrollIntoView({ block: 'nearest' });
-  history.replaceState(null, '', `#${floor}/${target}`);
+  writeHash();
 }
 
 function setFloor(f, target = null) {
@@ -772,18 +945,414 @@ function setFloor(f, target = null) {
     // room in mind is a fresh look at the building, not a continuation of wherever the
     // last one was dragged to — which on a phone can be a corner off screen.
     centre();
-    history.replaceState(null, '', `#${floor}`);
+    writeHash();
   }
 }
 
+/* ---------- the URL ---------- */
+
+// Everything the link carries: the floor being shown, the room picked on it, and the
+// walk, if there is one. `#3/N372?fra=3/N372&til=7/S751&via=trapp`, and the older
+// `#3/N372` still reads the same. One writer, so no caller can drop half of it.
+// The slashes inside fra and til are left as slashes — legal in a fragment, and the
+// links are meant to be pasted into Slack and read.
+function writeHash() {
+  const query = [];
+  if (trip.from && trip.to) {
+    query.push(`fra=${ref(trip.from)}`, `til=${ref(trip.to)}`);
+    if (via !== 'heis') query.push(`via=${via}`);
+  }
+  history.replaceState(null, '', '#' + floor
+    + (selected ? `/${selected}` : '')
+    + (query.length ? `?${query.join('&')}` : ''));
+}
+
 function fromHash() {
-  const [f, target] = decodeURIComponent(location.hash.slice(1)).split('/');
+  const [path, query] = decodeURIComponent(location.hash.slice(1)).split('?');
+  const [f, target] = path.split('/');
   if (!FLOOR_ORDER.includes(f)) return;
+
+  const params = new URLSearchParams(query);
+  via = CORE[params.get('via')] ? params.get('via') : 'heis';
+  trip = { from: pick(params.get('fra')), to: pick(params.get('til')) };
+  el.via.value = via;
+
   floor = f;
   selected = target || null;
   render();
   if (selected) select(selected, true);
 }
+
+/* ---------- the walk ---------- */
+
+// The corridors, as axis-aligned segments in the same 0–1 plan coordinates the rooms
+// use. Every floor is the same drawing at the same size, so one skeleton serves all
+// six. Traced off the drawing by eye: enough to say which way round the building to
+// walk, not a survey.
+// ponytail: hand-traced, so a redrawn plan means retracing this — nine numbers pairs,
+// cheaper than teaching the build script to find corridors.
+const CORRIDORS = [
+  [0.050, 0.252, 0.965, 0.252],   // north wing, its whole length
+  [0.372, 0.252, 0.372, 0.677],   // the cross corridor, down past the lifts
+  [0.327, 0.542, 0.372, 0.542],   // the lift doors
+  [0.341, 0.677, 0.428, 0.677],   // the stair, and on towards the south wing
+  [0.428, 0.677, 0.428, 0.858],   // into the south wing
+  [0.050, 0.727, 0.950, 0.727],   // south wing, the corridor along its north side
+  [0.050, 0.858, 0.950, 0.858],   // south wing, the one along its south side
+  [0.900, 0.727, 0.900, 0.858],   // between those two, at the east end
+  [0.825, 0.252, 0.825, 0.400],   // north wing, down to N 336
+];
+// The three shafts left of the middle, and the stair in the room below them. Both
+// serve floors 3–8, so either one is the way between any two of them, and which one
+// is the walker's to pick.
+const CORE = {
+  heis: { x: 0.327, y: 0.542, word: 'heisen' },
+  trapp: { x: 0.341, y: 0.677, word: 'trappen' },
+};
+
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const key = p => `${p.x.toFixed(4)},${p.y.toFixed(4)}`;
+
+// Where a point falls on a segment, clamped to its ends.
+function project(p, [x1, y1, x2, y2]) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const t = Math.max(0, Math.min(1, ((p.x - x1) * dx + (p.y - y1) * dy) / (dx * dx + dy * dy)));
+  return { x: x1 + t * dx, y: y1 + t * dy };
+}
+
+// Where two corridors meet. Every segment is axis-aligned, so a crossing can only be
+// one horizontal against one vertical, and its coordinates are one from each.
+function crossing(a, b) {
+  const level = s => s[1] === s[3];
+  if (level(a) === level(b)) return null;
+  const [h, v] = level(a) ? [a, b] : [b, a];
+  const p = { x: v[0], y: h[1] };
+  const on = ([x1, y1, x2, y2]) =>
+    p.x >= Math.min(x1, x2) - 1e-9 && p.x <= Math.max(x1, x2) + 1e-9 &&
+    p.y >= Math.min(y1, y2) - 1e-9 && p.y <= Math.max(y1, y2) + 1e-9;
+  return on(h) && on(v) ? p : null;
+}
+
+// The shortest walk from a to b along the corridors, as the points to draw through.
+// Each end joins the skeleton at the nearest point on the nearest corridor — the last
+// few metres from a doorway, which no corridor is drawn for.
+// The graph is rebuilt per call: with three dozen nodes that costs nothing, and it
+// keeps the two joining points from having to be spliced in and out of a shared one.
+function route(a, b) {
+  const ends = [a, b].map(p => {
+    let best = { d: Infinity };
+    CORRIDORS.forEach((s, i) => {
+      const q = project(p, s);
+      const d = dist(p, q);
+      if (d < best.d) best = { d, q, i };
+    });
+    return best;
+  });
+
+  const graph = new Map();
+  const node = p => {
+    const k = key(p);
+    if (!graph.has(k)) graph.set(k, { x: p.x, y: p.y, k, links: new Map() });
+    return graph.get(k);
+  };
+  const join = (m, n) => {
+    const d = dist(m, n);
+    if (d) { m.links.set(n.k, d); n.links.set(m.k, d); }
+  };
+
+  CORRIDORS.forEach((s, i) => {
+    const points = [{ x: s[0], y: s[1] }, { x: s[2], y: s[3] }];
+    CORRIDORS.forEach((t, j) => {
+      const p = i !== j && crossing(s, t);
+      if (p) points.push(p);
+    });
+    for (const end of ends) if (end.i === i) points.push(end.q);
+    // In order along the segment, so neighbours in the list are neighbours in the
+    // corridor and every walkable stretch becomes exactly one edge.
+    points.sort((p, q) => (p.x - q.x) || (p.y - q.y));
+    const nodes = points.map(node);
+    for (let n = 1; n < nodes.length; n++) join(nodes[n - 1], nodes[n]);
+  });
+
+  // Dijkstra. On a graph this small, scanning for the nearest unvisited node beats
+  // keeping a heap in sync.
+  const start = node(ends[0].q).k, goal = node(ends[1].q).k;
+  const cost = new Map([[start, 0]]);
+  const came = new Map();
+  const left = new Set(graph.keys());
+  while (left.size) {
+    let at = null;
+    for (const k of left) if (cost.has(k) && (at === null || cost.get(k) < cost.get(at))) at = k;
+    if (at === null) break;
+    left.delete(at);
+    if (at === goal) break;
+    for (const [k, d] of graph.get(at).links) {
+      const through = cost.get(at) + d;
+      if (!(cost.get(k) <= through)) { cost.set(k, through); came.set(k, at); }
+    }
+  }
+  if (!cost.has(goal)) return null;
+
+  const path = [];
+  for (let k = goal; k; k = came.get(k)) path.unshift(graph.get(k));
+  return [a, ...path, b];
+}
+
+/* ---------- drawing the walk ---------- */
+
+const SVG = 'http://www.w3.org/2000/svg';
+// The viewBox is the plan's own pixel size, so a 0–1 coordinate scales straight into it.
+const at = p => [(p.x * 2659).toFixed(1), (p.y * 1820).toFixed(1)];
+
+function stroke(className, points) {
+  const path = document.createElementNS(SVG, 'path');
+  path.setAttribute('class', className);
+  path.setAttribute('d', 'M' + points.map(p => at(p).join(' ')).join(' L'));
+  return path;
+}
+
+function dot(p) {
+  const c = document.createElementNS(SVG, 'circle');
+  const [x, y] = at(p);
+  c.setAttribute('cx', x);
+  c.setAttribute('cy', y);
+  c.setAttribute('r', 18);
+  return c;
+}
+
+// A room is `${floor}/${id}`, which is what the deep links carry.
+function pick(value) {
+  const [f, target] = (value || '').split('/');
+  return all().find(r => r.floor === f && id(r) === target) || null;
+}
+const ref = r => `${r.floor}/${id(r)}`;
+
+// Each end opens a listbox of every room. Not a <select>: that one is drawn by the OS,
+// outside the page, so nothing can see the pointer move over its options — and lighting
+// the room under the pointer on the plan is the whole point of the field. popover gives
+// the top layer, the light dismiss and Escape; everything a <select> would also have
+// given — arrows, Home/End, type-ahead, the active row, scrolling it into view — is
+// below, once, for both ends.
+function renderPickers() {
+  for (const [which, box] of [['from', el.fromList], ['to', el.toList]]) {
+    box.replaceChildren(...FLOOR_ORDER.flatMap(f => {
+      const inFloor = (rooms[f] || []).map(r => ({ ...r, floor: f }));
+      if (!inFloor.length) return [];
+
+      const heading = document.createElement('div');
+      heading.className = 'picker-floor';
+      heading.setAttribute('aria-hidden', 'true');   // the group below carries the name
+      heading.textContent = `${f}. etasje`;
+
+      const group = document.createElement('div');
+      group.setAttribute('role', 'group');
+      group.setAttribute('aria-label', `${f}. etasje`);
+      group.append(heading, ...inFloor
+        .sort((p, q) => label(p).localeCompare(label(q), 'nb'))
+        .map(r => {
+          const option = document.createElement('div');
+          // No slash: an id may hold one, but it makes the id unusable as a selector.
+          option.id = `${which}-${f}-${id(r)}`;
+          option.className = 'picker-option';
+          option.setAttribute('role', 'option');
+          option.setAttribute('aria-selected', 'false');
+          option.dataset.ref = ref(r);
+          option.dataset.id = id(r);   // what highlight() reads, as on a room row
+          option.textContent = `${label(r)} · ${r.type}`;
+          return option;
+        }));
+      return [group];
+    }));
+  }
+}
+
+function wirePicker(which, button, box) {
+  let active = null;
+  let typed = '';
+  let typedAt = 0;
+  let openAtPress = false;
+
+  const options = () => [...box.querySelectorAll('[role="option"]')];
+
+  // The active row is the one the arrows and the pointer land on. Focus stays on the
+  // button, which points at it with aria-activedescendant, so there is no focus to
+  // shuffle in and out of the list.
+  function setActive(option, scroll = true) {
+    active?.classList.remove('active');
+    active = option || null;
+    if (!active) {
+      button.removeAttribute('aria-activedescendant');
+      highlight(null);
+      return;
+    }
+    active.classList.add('active');
+    button.setAttribute('aria-activedescendant', active.id);
+    if (scroll) active.scrollIntoView({ block: 'nearest' });
+    highlight(active);   // the plan lights the room, the same call a room row makes
+  }
+
+  function move(step) {
+    const all = options();
+    const at = active ? all.indexOf(active) : -1;
+    const to = step === 'first' ? 0
+      : step === 'last' ? all.length - 1
+      : Math.max(0, Math.min(all.length - 1, at + step));
+    setActive(all[to]);
+  }
+
+  // Type-ahead, as a <select> has. Matching anywhere in the row rather than only at its
+  // start: people know the room number, and "372" should find N 372.
+  function typeAhead(char) {
+    const now = performance.now();
+    typed = now - typedAt > 800 ? char : typed + char;
+    typedAt = now;
+    const all = options();
+    const hit = o => norm(o.textContent).includes(norm(typed));
+    // From just past the active row, so the same letter again steps to the next match,
+    // then round to the top.
+    const after = all.slice(active ? all.indexOf(active) + (typed.length === 1 ? 1 : 0) : 0);
+    setActive(after.find(hit) || all.find(hit) || active);
+  }
+
+  function open() {
+    const b = button.getBoundingClientRect();
+    const below = innerHeight - b.bottom;
+    // Clear of the window's own edges: on a phone the bottom one is under the home
+    // indicator, where the last room of the list would be untappable.
+    const edge = 24;
+    // Under the field, or over it when that is where the room is — on a phone the
+    // panel is a sheet at the bottom of the screen and there is little below.
+    Object.assign(box.style, below >= b.top
+      ? { top: `${b.bottom + 4}px`, bottom: 'auto', maxHeight: `${below - edge}px` }
+      : { bottom: `${innerHeight - b.top + 4}px`, top: 'auto', maxHeight: `${b.top - edge}px` });
+    box.style.left = `${b.left}px`;
+    box.style.minWidth = `${b.width}px`;
+    box.showPopover();
+  }
+
+  function commit(option) {
+    box.hidePopover();
+    trip = { ...trip, [which]: pick(option.dataset.ref) };
+    // Show the floor the walk starts on, or the room just picked if it is the only end.
+    const show = trip.from || trip.to;
+    if (show && show.floor !== floor) setFloor(show.floor);
+    else { render(); writeHash(); }
+  }
+
+  // The light dismiss fires on the way down, so by the time the click arrives a press
+  // on the open field's own button has already shut it. Without remembering what it
+  // was before the press, the click below would open it straight back up.
+  button.addEventListener('pointerdown', () => { openAtPress = box.matches(':popover-open'); });
+  button.addEventListener('click', () => { if (!openAtPress) open(); });
+
+  button.addEventListener('keydown', e => {
+    if (!box.matches(':popover-open')) {
+      if (['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(e.key)) { e.preventDefault(); open(); }
+      return;
+    }
+    switch (e.key) {
+      case 'ArrowDown': move(1); break;
+      case 'ArrowUp': move(-1); break;
+      case 'PageDown': move(10); break;
+      case 'PageUp': move(-10); break;
+      case 'Home': move('first'); break;
+      case 'End': move('last'); break;
+      // Tab commits and moves on, the way leaving a <select> keeps what it is showing.
+      case 'Tab': if (active) commit(active); return;
+      case 'Enter': case ' ': if (active) commit(active); break;
+      // Escape and everything else with a modifier belong to the popover and the page.
+      case 'Escape': return;
+      default:
+        if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey) return;
+        typeAhead(e.key);
+    }
+    e.preventDefault();
+  });
+
+  box.addEventListener('mouseover', e => {
+    const option = e.target.closest('[role="option"]');
+    if (option) setActive(option, false);   // the pointer is already on it
+  });
+  box.addEventListener('click', e => {
+    const option = e.target.closest('[role="option"]');
+    if (option) commit(option);
+  });
+
+  box.addEventListener('toggle', e => {
+    const open = e.newState === 'open';
+    button.setAttribute('aria-expanded', String(open));
+    if (!open) { setActive(null); typed = ''; return; }
+    const chosen = trip[which];
+    for (const option of options()) {
+      option.setAttribute('aria-selected', String(Boolean(chosen) && option.dataset.ref === ref(chosen)));
+    }
+    setActive(options().find(o => o.getAttribute('aria-selected') === 'true') || options()[0]);
+    button.focus();   // the keyboard talks to the button, not to the list
+  });
+}
+
+wirePicker('from', el.from, el.fromList);
+wirePicker('to', el.to, el.toList);
+
+el.clear.onclick = () => {
+  trip = { from: null, to: null };
+  render();
+  writeHash();
+};
+
+function drawRoute() {
+  el.line.replaceChildren();
+  el.note.textContent = '';
+  const { from, to } = trip;
+
+  for (const [end, button] of [[from, el.from], [to, el.to]]) {
+    button.textContent = end ? `${label(end)} · ${end.floor}. et.` : 'Velg rom';
+    button.classList.toggle('empty', !end);
+  }
+  el.clear.hidden = !from && !to;
+  // A walk that never leaves its floor has no way up to pick, so the field says so
+  // rather than sitting there doing nothing.
+  el.via.disabled = Boolean(from && to && from.floor === to.floor);
+  if (!from || !to || from === to) return;
+
+  // Two floors means two walks with a ride or a climb between them, and only the walk
+  // on the floor being shown can be drawn. Both ends on one floor is a single walk,
+  // and then only that floor has anything to show.
+  const together = from.floor === to.floor;
+  const core = CORE[via];
+  const leg = together
+    ? (floor === from.floor ? route(from, to) : null)
+    : floor === from.floor ? route(from, core)
+    : floor === to.floor ? route(core, to)
+    : null;
+
+  el.note.textContent = together
+    ? `${label(from)} → ${label(to)}, ${from.floor}. etasje.`
+    : `${label(from)} (${from.floor}. et.) → ${core.word} → ${label(to)} (${to.floor}. et.).`
+      + (leg ? '' : ` Velg ${from.floor}. eller ${to.floor}. etasje for å se ruten.`);
+
+  if (leg) {
+    el.line.append(stroke('casing', leg), stroke('line', leg));
+    // The end that is a ride rather than a door needs saying on the plan; the ends
+    // that are rooms wear their pill's ring, put on by ringEnds().
+    if (!together) el.line.append(dot(core));
+  }
+}
+
+// Either end is worth pointing at on its own: picking Fra should show where that room
+// is without waiting for Til.
+function ringEnds() {
+  for (const marker of el.plan.querySelectorAll('.marker')) {
+    marker.classList.toggle('via', [trip.from, trip.to]
+      .some(r => r && r.floor === floor && id(r) === marker.dataset.id));
+  }
+}
+
+el.via.onchange = () => {
+  via = el.via.value;
+  render();
+  writeHash();
+};
 
 /* ---------- theme ---------- */
 
@@ -1001,6 +1570,7 @@ Promise.all([
 ]).then(([r, n]) => {
   rooms = r;
   names = n;
+  renderPickers();
   // render() first: fit() measures the sheet, and the sheet is only as tall as the
   // floor buttons render it.
   render();
