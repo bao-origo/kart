@@ -623,6 +623,8 @@ h2 {
         <select id="via">
           <option value="heis">Heisen</option>
           <option value="trapp">Trappen</option>
+          <option value="heis-kaffe">Heisen og Coffee Queen</option>
+          <option value="trapp-kaffe">Trappen og Coffee Queen</option>
         </select>
         <div class="route-foot">
           <p class="route-note" id="route-note" aria-live="polite"></p>
@@ -1015,6 +1017,15 @@ const CORE = {
   heis: { x: 0.327, y: 0.542, word: 'heisen' },
   trapp: { x: 0.341, y: 0.677, word: 'trappen' },
 };
+// The same two ways up, taken with a stop at the coffee machine on the eighth. The
+// machine is a stop on the walk, not a third way between floors, so these carry the
+// same point as the shaft they are named after.
+CORE['heis-kaffe'] = { ...CORE.heis, coffee: true };
+CORE['trapp-kaffe'] = { ...CORE.trapp, coffee: true };
+
+// The one coffee machine on the map. Looked up rather than written down, so it moves
+// when the drawing does.
+const coffeeQueen = () => all().find(r => r.type === 'Kaffemaskiner');
 
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const key = p => `${p.x.toFixed(4)},${p.y.toFixed(4)}`;
@@ -1108,7 +1119,36 @@ function route(a, b) {
 
 const SVG = 'http://www.w3.org/2000/svg';
 // The viewBox is the plan's own pixel size, so a 0–1 coordinate scales straight into it.
-const at = p => [(p.x * 2659).toFixed(1), (p.y * 1820).toFixed(1)];
+const px = p => ({ x: p.x * 2659, y: p.y * 1820 });
+const at = p => [p.x.toFixed(1), p.y.toFixed(1)];
+
+// A walk with a stop in it comes back along the corridors it went out on, and one leg
+// drawn over the other reads as a single line going nowhere. Every leg is shifted to
+// the right of its own direction of travel, so out and back sit side by side as two
+// lanes. The shift is measured after the scaling: the plan is half again as wide as it
+// is tall, so a sideways nudge in 0–1 coordinates would come out lopsided.
+// ponytail: lanes only say there are two legs, not which is which — add arrowheads
+// (marker-mid) if the pair still reads ambiguously.
+function lanes(points, by) {
+  // A leg that starts or ends on a corridor repeats that point — its own joining
+  // point is itself — and a segment of no length has no side to be shifted to.
+  const p = points.map(px).filter((q, i, a) => !i || Math.hypot(q.x - a[i - 1].x, q.y - a[i - 1].y) > 0.01);
+  if (!by) return p;
+  const right = (a, b) => {
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len = Math.hypot(dx, dy);
+    return len ? { x: -dy / len, y: dx / len } : null;
+  };
+  const normals = p.map((q, i) => i && right(p[i - 1], q));
+  return p.map((q, i) => {
+    // The mitre where the two shifted segments meet. Corners here are right angles, so
+    // the two normals never point against each other and the divisor stays near 1.
+    const a = normals[i] || normals[i + 1], b = normals[i + 1] || normals[i];
+    if (!a) return q;
+    const k = by / (1 + a.x * b.x + a.y * b.y);
+    return { x: q.x + (a.x + b.x) * k, y: q.y + (a.y + b.y) * k };
+  });
+}
 
 function stroke(className, points) {
   const path = document.createElementNS(SVG, 'path');
@@ -1316,32 +1356,48 @@ function drawRoute() {
     button.classList.toggle('empty', !end);
   }
   el.clear.hidden = !from && !to;
-  // A walk that never leaves its floor has no way up to pick, so the field says so
-  // rather than sitting there doing nothing.
-  el.via.disabled = Boolean(from && to && from.floor === to.floor);
   if (!from || !to || from === to) return;
 
-  // Two floors means two walks with a ride or a climb between them, and only the walk
-  // on the floor being shown can be drawn. Both ends on one floor is a single walk,
-  // and then only that floor has anything to show.
-  const together = from.floor === to.floor;
   const core = CORE[via];
-  const leg = together
-    ? (floor === from.floor ? route(from, to) : null)
-    : floor === from.floor ? route(from, core)
-    : floor === to.floor ? route(core, to)
-    : null;
+  // Where the walk stops, in order. A coffee way up puts the machine between the two
+  // ends — unless it is already one of them, and then there is nothing to detour to.
+  const machine = core.coffee ? coffeeQueen() : null;
+  const stops = [from, ...(machine && ![from, to].some(r => ref(r) === ref(machine)) ? [machine] : []), to];
 
-  el.note.textContent = together
-    ? `${label(from)} → ${label(to)}, ${from.floor}. etasje.`
-    : `${label(from)} (${from.floor}. et.) → ${core.word} → ${label(to)} (${to.floor}. et.).`
-      + (leg ? '' : ` Velg ${from.floor}. eller ${to.floor}. etasje for å se ruten.`);
+  // A change of floor between two stops is a ride or a climb, and each side of it is a
+  // walk to or from the core. Only the floor being shown can be drawn, so a pair of
+  // stops that happens elsewhere leaves nothing behind.
+  const oneFloor = stops.every(s => s.floor === from.floor);
+  const legs = [];
+  for (let i = 1; i < stops.length; i++) {
+    const [a, b] = [stops[i - 1], stops[i]];
+    if (a.floor === b.floor) {
+      if (floor === a.floor) legs.push(route(a, b));
+    } else {
+      if (floor === a.floor) legs.push(route(a, core));
+      if (floor === b.floor) legs.push(route(core, b));
+    }
+  }
 
-  if (leg) {
-    el.line.append(stroke('casing', leg), stroke('line', leg));
+  // "uten romnummer" is how the lists write a numberless room; in a sentence about a
+  // walk, the machine's own name is what to say.
+  const stopName = s => s.code ? label(s) : nameOf(s) || label(s);
+  const floors = [...new Set(stops.map(s => s.floor))].map(f => `${f}.`);
+  el.note.textContent = oneFloor
+    ? `${stops.map(stopName).join(' → ')}, ${from.floor}. etasje.`
+    : stops.map((s, i) => (i && s.floor !== stops[i - 1].floor ? `${core.word} → ` : '')
+        + `${stopName(s)} (${s.floor}. et.)`).join(' → ') + '.'
+      + (legs.length ? ''
+        : ` Velg ${floors.slice(0, -1).join(', ')} eller ${floors.at(-1)} etasje for å se ruten.`);
+
+  if (legs.length) {
+    // One leg has nothing to be told apart from, so it stays on the corridor's middle.
+    const drawn = legs.map(l => lanes(l, legs.length > 1 ? 18 : 0));
+    // Every casing first, so the second leg's casing cannot paint over the first's line.
+    el.line.append(...drawn.map(l => stroke('casing', l)), ...drawn.map(l => stroke('line', l)));
     // The end that is a ride rather than a door needs saying on the plan; the ends
     // that are rooms wear their pill's ring, put on by ringEnds().
-    if (!together) el.line.append(dot(core));
+    if (!oneFloor) el.line.append(dot(px(core)));
   }
 }
 

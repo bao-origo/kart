@@ -80,9 +80,13 @@ drawn.
 
 Two floors means two walks with a ride or a climb between them: the three shafts left
 of the middle are the lifts and the room below them is the stair, both serving floors
-3–8. **Via** picks between them, and is disabled when both rooms are on one floor. The
-map shows one floor at a time, so it draws the leg for the floor you are on and the
-line under the fields says which floors the rest is on.
+3–8. **Via** picks between them. Its other two options take the same shaft but stop at
+the coffee machine on the eighth on the way, which turns the walk into three stops and
+two rides — worth picking even when both rooms are on one floor. The map shows one
+floor at a time, so it draws the legs for the floor you are on and the line under the
+fields says which floors the rest is on. Where a floor carries two legs, the way back
+retraces the way out, so each is drawn a little to the right of its own direction of
+travel: two lanes rather than one line hiding another.
 
 The walk is in the link, after the floor and the room the older links already carried:
 

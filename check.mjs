@@ -342,7 +342,8 @@ assert.match(from.textContent, /Velg rom/);
 travel("3/N372", "3/S351");
 assert.match(d.querySelector("#planimg").src, /plan-3\.png$/);
 assert.match(note(), /N 372.*S 351.*3\. etasje/);
-assert.ok(d.getElementById("via").disabled, "one floor, so there is no way up to pick");
+assert.equal(d.getElementById("via").disabled, false,
+  "one floor still has a way up to pick: the coffee ways leave it and come back");
 
 // It starts at one room and ends at the other, and every leg between runs along a
 // corridor — so each is either horizontal or vertical, never a line through walls.
@@ -384,6 +385,61 @@ assert.ok(near(points().at(-1)[1], 0.677 * 1820), "the first leg ends at the sta
 via.value = "heis";
 via.onchange();
 assert.ok(near(points().at(-1)[1], 0.542 * 1820), "and back at the lift");
+
+// The other two ways up are the same shafts with a stop at the coffee machine, so the
+// walk grows a third stop on the eighth floor and rides twice.
+const cup = onPlan(rooms["8"].find(r => r.type === "Kaffemaskiner"));
+via.value = "heis-kaffe";
+via.onchange();
+assert.match(note(),
+  /^N 372 \(3\. et\.\) → heisen → Coffee Queen \(8\. et\.\) → heisen → S 751 \(7\. et\.\)\.$/);
+assert.ok(near(points().at(-1)[0], 0.327 * 2659), "the first leg still ends at the lift");
+
+// Two legs on one floor are drawn as two lanes, a little to either side of the
+// corridor they share, so neither is on the corridor's middle any more.
+const lane = (a, b) => Math.abs(a - b) < 30;
+const legs = () => [...d.querySelectorAll("#route-line .line")]
+  .map(p => p.getAttribute("d").slice(1).split(" L").map(q => q.split(" ").map(Number)));
+
+floorButton("8").click();
+const [out, back] = legs();
+assert.equal(legs().length, 2, "up to the machine, and back");
+assert.ok(lane(out.at(0)[0], 0.327 * 2659), "the detour starts at the lift");
+assert.ok(lane(out.at(-1)[0], cup[0]) && lane(out.at(-1)[1], cup[1]),
+  "and reaches the machine");
+// The way back retraces the way out, so it has to be drawn beside it and never over
+// it: one line hidden under the other says nothing about which way the walk goes.
+for (const p of out) for (const q of back) {
+  assert.ok(Math.hypot(p[0] - q[0], p[1] - q[1]) > 20,
+    `the two legs touch at ${p} and ${q}`);
+}
+
+floorButton("5").click();
+assert.equal(line(), null, "a floor the walk only passes still has nothing to draw");
+assert.match(note(), /Velg 3\., 8\. eller 7\. etasje/);
+assert.equal(w.location.hash, "#5?fra=3/N372&til=7/S751&via=heis-kaffe");
+
+// The stair carries its own coffee way, and it goes to the stair, not the lift.
+via.value = "trapp-kaffe";
+via.onchange();
+floorButton("8").click();
+assert.ok(lane(points().at(0)[1], 0.677 * 1820), "the detour starts at the stair");
+assert.match(note(), /trappen → Coffee Queen/);
+
+// Both ends on one floor is still a detour worth drawing: out to the machine and back,
+// so that floor carries both legs.
+travel("3/N372", "3/S351");
+assert.match(note(),
+  /^N 372 \(3\. et\.\) → trappen → Coffee Queen \(8\. et\.\) → trappen → S 351 \(3\. et\.\)\.$/);
+assert.equal(d.querySelectorAll("#route-line .line").length, 2, "up to the stair, and back down");
+
+// The machine as an end of the walk is not also a stop on the way to itself.
+travel("3/N372", "8/Kaffemaskiner-0.3014");
+assert.match(note(), /^N 372 \(3\. et\.\) → trappen → Coffee Queen \(8\. et\.\)\.$/);
+
+via.value = "heis";
+via.onchange();
+travel("3/N372", "7/S751");
 
 // The two ends wear a ring of their own, which a passing mouse must not clear.
 const ends = () => [...markers()].filter(m => m.classList.contains("via")).map(m => m.textContent);
