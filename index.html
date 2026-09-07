@@ -10,8 +10,8 @@
 <meta name="description" content="Finn møterom i Grensesvingen 6, etasje 3–8.">
 <link rel="manifest" href="manifest.webmanifest">
 <!-- The browser and iOS chrome follow the theme instead of flashing white. -->
-<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#242a32" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1a1a19" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Kart">
@@ -28,41 +28,35 @@
 <style>
 :root {
   color-scheme: light;
-  --surface: #ffffff;
-  --plane: #f5f7f9;
-  --ink: #26323f;
-  --ink-2: #5e6b78;
-  --ink-muted: #697886;
-  --line: #dde3e9;
-  --ring: #26323f0d;
-  --accent: #425c77;
-  --accent-soft: #edf1f6;
-  --series-1: #7296b5;
-  --series-2: #bea088;
-  --series-3: #7fa9b1;
-  --series-4: #a99bbe;
-  --series-5: #c0ac79;
+  --surface: #fcfcfb;
+  --plane: #f9f9f7;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --ink-muted: #898781;
+  --line: #e1e0d9;
+  --ring: rgba(11, 11, 11, .1);
+  --series-1: #2974d0;
+  --series-2: #be542a;
+  --series-3: #15855d;
+  --series-4: #98488c;
+  --series-5: #8a6d00;
+  --accent: var(--series-1);
+  --accent-soft: var(--plane);
   --plan-invert: 0;
-  --shadow: 0 2px 8px #26323f08;
+  --shadow: 0 2px 8px var(--ring);
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --surface: #242a32;
-  --plane: #191f27;
-  --ink: #eff3f7;
-  --ink-2: #bdc7d2;
-  --ink-muted: #a5b0bc;
-  --line: #3b4653;
-  --ring: #0002;
-  --accent: #bdcee1;
-  --accent-soft: #303d4d;
-  --series-1: #9fb6d0;
-  --series-2: #c7af9a;
-  --series-3: #9fc1c6;
-  --series-4: #baafd0;
-  --series-5: #d0c195;
+  --surface: #1a1a19;
+  --plane: #0d0d0d;
+  --ink: #fff;
+  --ink-2: #c3c2b7;
+  --line: #2c2c2a;
+  --ring: rgba(255, 255, 255, .1);
+  --series-1: #3275c7;
+  --series-2: #c35022;
+  --series-3: #15855e;
   --plan-invert: 1;
-  --shadow: 0 2px 8px #0002;
 }
 * { box-sizing: border-box; }
 body {
@@ -84,25 +78,10 @@ button { touch-action: manipulation; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
-.app-header {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: max(17px, env(safe-area-inset-top)) max(28px, env(safe-area-inset-right)) 17px max(24px, env(safe-area-inset-left));
-  border-bottom: 1px solid var(--line);
-  z-index: 7;
-  background: var(--surface);
-}
-.brand-mark { display: grid; place-items: center; width: 42px; height: 42px; color: var(--ink); background: transparent; }
-.brand-mark .icon { width: 32px; height: 32px; stroke-width: 1.25; color: var(--accent); }
-h1 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -.025em; }
-.brand-caption { margin: 1px 0 0; color: var(--ink-2); font-size: 12px; }
-.header-meta { margin-left: auto; display: flex; align-items: center; gap: 20px; color: var(--ink-2); font-size: 12px; }
-.header-meta > span { padding-right: 20px; border-right: 1px solid var(--line); }
 #theme, #collapse { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 4px; background: transparent; line-height: 1; }
-#theme { border-color: transparent; }
+#theme { border: 0; border-left: 1px solid var(--line); border-radius: 0; }
 #theme:hover, #collapse:hover { background: var(--accent-soft); }
-main { flex: 1; min-height: 0; display: grid; grid-template-columns: 344px minmax(0, 1fr); }
+main { flex: 1; min-height: 0; display: grid; grid-template-columns: 344px minmax(0, 1fr); padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left); }
 main:has(#panel[hidden]) { grid-template-columns: 1fr; }
 #panel[hidden] { display: none; }
 aside { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--line); background: var(--surface); }
@@ -138,7 +117,7 @@ search .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-muted
 .picker { position: fixed; inset: auto; margin: 0; width: max-content; max-width: min(90vw, 380px); overflow: auto; overscroll-behavior: contain; padding: 6px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); color: var(--ink); box-shadow: 0 8px 24px #0002; font: 14px/1.5 system-ui, sans-serif; }
 .picker-floor { padding: 10px 10px 4px; color: var(--ink-muted); font-size: 11px; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; }
 .picker-option { overflow: hidden; padding: 9px 10px; border-radius: 3px; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
-.picker-option.active { background: var(--ink); color: var(--surface); }
+.picker-option.active { background: var(--series-1); color: #fff; }
 .picker-option[aria-selected="true"] { font-weight: 650; }
 .directory { min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 20px 18px 24px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
 .list-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 6px 18px; }
@@ -146,7 +125,7 @@ search .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-muted
 #result-count { color: var(--ink-muted); font-size: 11px; }
 #list h2 { margin: 20px 0 5px; font-size: 12px; font-weight: 600; }
 #list h2:first-child { margin-top: 0; }
-.type { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 6px; border: 0; border-radius: 3px; background: transparent; color: var(--ink-2); font: inherit; text-align: left; }
+.type { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 6px; border: 0; border-radius: 3px; background: transparent; color: color-mix(in oklab, var(--c) 70%, var(--ink)); font: inherit; text-align: left; }
 .type::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--c); flex: none; }
 .type::after { content: '−'; margin-left: auto; color: var(--ink-muted); font-size: 16px; line-height: 1; }
 .type[aria-pressed="false"] { color: var(--ink-muted); }
@@ -157,7 +136,7 @@ search .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-muted
 .rooms button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 42px; padding: 9px 12px 9px 21px; border: 0; border-radius: 3px; background: transparent; text-align: left; }
 .rooms button::after { content: ''; flex: none; width: 5px; height: 5px; margin-left: auto; border-top: 1px solid var(--ink-muted); border-right: 1px solid var(--ink-muted); rotate: 45deg; }
 .rooms button:hover { background: var(--plane); }
-.rooms button[aria-current="true"] { background: var(--accent-soft); color: var(--accent); box-shadow: inset 2px 0 0 var(--accent); }
+.rooms button[aria-current="true"] { background: var(--plane); color: var(--ink); box-shadow: inset 2px 0 0 var(--ink); }
 .rooms .code { font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .rooms .meta { color: var(--ink-2); font-size: 12px; }
 .rooms .meta:empty { display: none; }
@@ -179,13 +158,12 @@ search .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-muted
 .toolbar button.wide { display: flex; gap: 7px; width: auto; margin-left: 6px; padding: 0 10px; border-left: 1px solid var(--line); border-radius: 0; font-size: 12px; }
 .toolbar .icon { width: 17px; height: 17px; }
 #zoom { width: 90px; height: 24px; accent-color: var(--accent); }
-.viewport { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; background-color: var(--plane); touch-action: none; cursor: grab; scrollbar-width: none; }
+.viewport { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; background-color: var(--surface); touch-action: none; cursor: grab; scrollbar-width: none; }
 .viewport::-webkit-scrollbar { display: none; }
 .viewport.dragging { cursor: grabbing; }
 /* The transparent border is pan space; percentages stay relative to the drawing. */
 .plan { position: relative; box-sizing: content-box; width: 100%; border: solid transparent; border-width: 50svh 50vw; user-select: none; }
-.plan img { display: block; width: 100%; aspect-ratio: 2659 / 1820; -webkit-touch-callout: none; touch-action: none; filter: invert(var(--plan-invert)) hue-rotate(calc(var(--plan-invert) * 180deg)); mix-blend-mode: multiply; opacity: .72; }
-:root[data-theme="dark"] .plan img { mix-blend-mode: screen; opacity: .6; }
+.plan img { display: block; width: 100%; aspect-ratio: 2659 / 1820; -webkit-touch-callout: none; touch-action: none; filter: invert(var(--plan-invert)) hue-rotate(calc(var(--plan-invert) * 180deg)); }
 .route-line { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .route-line path { fill: none; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .route-line .casing { stroke: var(--surface); stroke-width: 7; opacity: .85; }
@@ -196,16 +174,15 @@ search .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-muted
   left: var(--x);
   top: var(--y);
   translate: -50% -50%;
-  padding: 2px 5px;
-  border: 1px solid color-mix(in srgb, var(--ink) 55%, var(--surface));
-  border-left: 3px solid var(--c);
+  padding: 2px 6px;
+  border: 0;
   border-radius: 3px;
-  box-shadow: 0 0 0 1px var(--surface), 0 2px 4px #26323f2b;
-  font: 600 11px/1.35 system-ui, sans-serif;
+  box-shadow: 0 0 0 2px var(--surface);
+  font: 700 11px/1.35 system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  color: var(--ink);
-  background: var(--surface);
+  color: #fff;
+  background: var(--c);
 }
 .marker[data-color="1"] { --c: var(--series-1); }
 .marker[data-color="2"] { --c: var(--series-2); }
@@ -213,10 +190,10 @@ search .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-muted
 .marker[data-color="4"] { --c: var(--series-4); }
 .marker[data-color="5"] { --c: var(--series-5); }
 .marker:is(:hover, :focus-visible, .hot, .via) { z-index: 3; scale: 1.1; }
-.marker.hot, .marker.via { border-color: var(--accent); box-shadow: 0 0 0 1px var(--surface), 0 0 0 2px var(--accent); }
+.marker.hot, .marker.via { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--c); }
 .marker.faded, .plan.pointing .marker:not(.hot) { opacity: .2; }
 .plan.pointing .marker.hot { opacity: 1; }
-.marker[aria-current="true"] { z-index: 4; scale: 1.15; color: var(--surface); background: var(--ink); border-color: var(--ink); box-shadow: 0 0 0 2px var(--surface); }
+.marker[aria-current="true"] { z-index: 4; scale: 1.15; box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--c); }
 .marker[data-type="Kaffemaskiner"] { padding: 0; border: 0; width: 31px; height: 25px; display: grid; place-items: center; background: none; box-shadow: none; font-size: 17px; line-height: 1; filter: drop-shadow(0 0 2px var(--surface)) drop-shadow(0 0 2px var(--surface)); }
 .marker[data-type="Kaffemaskiner"]:is(:hover, :focus-visible, .hot, .via, [aria-current="true"]) { box-shadow: none; font-size: 24px; }
 .grip { display: none; width: 100%; padding: 14px 0 8px; border: 0; background: none; cursor: grab; touch-action: none; }
@@ -236,12 +213,6 @@ search .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-muted
   .intro p { display: none; }
 }
 @media (max-width: 720px) {
-  .app-header { padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left)); gap: 10px; }
-  .brand-mark { width: 30px; height: 36px; }
-  h1 { font-size: 15px; }
-  .brand-caption { font-size: 11px; }
-  .header-meta { margin-left: auto; }
-  .header-meta > span { display: none; }
   #theme { width: 36px; height: 36px; }
   .map-heading { top: 14px; left: 14px; padding: 10px 14px; }
   .toolbar { right: 14px; bottom: 14px; }
@@ -250,7 +221,7 @@ search .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-muted
 }
 @media (max-width: 720px) and (orientation: portrait) {
   main { grid-template-columns: 1fr; grid-template-rows: 1fr; }
-  aside { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; max-height: calc(100dvh - 80px - env(safe-area-inset-top)); padding-bottom: max(16px, env(safe-area-inset-bottom)); border: 0; border-top: 1px solid var(--line); border-radius: 10px 10px 0 0; box-shadow: 0 -4px 20px #26323f0b; overflow: hidden; }
+  aside { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; max-height: 88dvh; padding-bottom: max(16px, env(safe-area-inset-bottom)); border: 0; border-top: 1px solid var(--line); border-radius: 10px 10px 0 0; box-shadow: 0 -4px 20px var(--ring); overflow: hidden; }
   aside.open { height: 72dvh; }
   aside:not(.open) .directory, aside:not(.open) .route-panel, aside:not(.open) .intro { display: none; }
   .controls { flex-shrink: 0; gap: 14px; padding: 8px 20px 14px; }
@@ -271,7 +242,6 @@ search .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-muted
   aside.open:has(.route-panel[open]) .directory { flex-shrink: 0; min-height: 90px; }
 }
 @media (max-width: 720px) and (orientation: landscape) {
-  .app-header { padding-top: 6px; padding-bottom: 6px; }
   main { grid-template-columns: minmax(230px, 40%) minmax(0, 1fr); }
   aside { overflow: auto; }
   .controls { padding: 14px; gap: 12px; }
@@ -286,13 +256,7 @@ search .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-muted
 </head>
 <body>
 
-<header class="app-header">
-  <div class="brand-mark" aria-hidden="true">
-    <svg class="icon" viewBox="0 0 24 24"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2Z M9 3v16 M15 5v16"/></svg>
-  </div>
-  <div><h1>Grensesvingen 6</h1><p class="brand-caption">Rom og etasjer</p></div>
-  <div class="header-meta"><span>Etasje 3–8</span><button type="button" id="theme"></button></div>
-</header>
+<h1 class="sr-only">Kart – Grensesvingen 6</h1>
 
 <main>
   <aside id="panel">
@@ -345,6 +309,7 @@ search .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-muted
     <div class="map-heading">
       <button type="button" id="collapse" aria-expanded="true" aria-controls="panel"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 7-5 5 5 5"/></svg></button>
       <div><strong id="map-floor">3. etasje</strong><span>Grensesvingen 6</span></div>
+      <button type="button" id="theme"></button>
     </div>
     <p class="map-help"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4-4 4 4 4 M4 8h12 M16 20l4-4-4-4 M20 16H8"/></svg>Dra for å utforske · Velg et rom for å se hvor det er</p>
     <div class="toolbar" role="group" aria-label="Kartvisning">
