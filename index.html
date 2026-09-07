@@ -918,7 +918,7 @@ function renderPickers() {
           option.setAttribute('aria-selected', 'false');
           option.dataset.ref = ref(r);
           option.dataset.id = id(r);   // what highlight() reads, as on a room row
-          option.textContent = `${label(r)} · ${r.type}`;
+          option.textContent = [r.code, nameOf(r), r.type].filter(Boolean).join(' · ');
           return option;
         }));
       return [group];
@@ -1066,7 +1066,9 @@ function drawRoute() {
   const { from, to } = trip;
 
   for (const [end, button] of [[from, el.from], [to, el.to]]) {
-    button.textContent = end ? `${label(end)} · ${end.floor}. et.` : 'Velg rom';
+    button.textContent = end
+      ? `${[end.code, nameOf(end)].filter(Boolean).join(' · ') || end.type} · ${end.floor}. et.`
+      : 'Velg rom';
     button.classList.toggle('empty', !end);
   }
   el.clear.hidden = !from && !to;
@@ -1093,8 +1095,7 @@ function drawRoute() {
     }
   }
 
-  // "uten romnummer" is how the lists write a numberless room; in a sentence about a
-  // walk, the machine's own name is what to say.
+  // Prefer the room's own name when a route stop has no number.
   const stopName = s => s.code ? label(s) : nameOf(s) || label(s);
   const floors = [...new Set(stops.map(s => s.floor))].map(f => `${f}.`);
   el.note.textContent = oneFloor
