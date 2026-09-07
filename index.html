@@ -10,8 +10,8 @@
 <meta name="description" content="Finn møterom i Grensesvingen 6, etasje 3–8.">
 <link rel="manifest" href="manifest.webmanifest">
 <!-- The browser and iOS chrome follow the theme instead of flashing white. -->
-<meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#1a1a19" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#242a32" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Kart">
@@ -28,598 +28,271 @@
 <style>
 :root {
   color-scheme: light;
-  --surface: #fcfcfb;
-  --plane: #f9f9f7;
-  --ink: #0b0b0b;
-  --ink-2: #52514e;
-  --ink-muted: #898781;
-  --line: #e1e0d9;
-  --ring: rgba(11, 11, 11, .1);
-  /* Darkened just enough that white text on them clears 4.5:1, since the pills
-     are filled with these. */
-  --series-1: #2974d0;  /* Møterom */
-  --series-2: #be542a;  /* Multirom */
-  --series-3: #15855d;  /* øvrige romtyper */
-  /* Dark enough for white text on either surface, so unlike their neighbours these
-     need no separate dark-mode value. */
-  --series-4: #98488c;  /* WC */
-  --series-5: #8a6d00;  /* Print/kopi */
+  --surface: #ffffff;
+  --plane: #f5f7f9;
+  --ink: #26323f;
+  --ink-2: #5e6b78;
+  --ink-muted: #697886;
+  --line: #dde3e9;
+  --ring: #26323f0d;
+  --accent: #425c77;
+  --accent-soft: #edf1f6;
+  --series-1: #7296b5;
+  --series-2: #bea088;
+  --series-3: #7fa9b1;
+  --series-4: #a99bbe;
+  --series-5: #c0ac79;
   --plan-invert: 0;
+  --shadow: 0 2px 8px #26323f08;
 }
-/* The script in <head> always resolves data-theme to light or dark, so the system
-   preference needs no media query of its own. */
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --surface: #1a1a19;
-  --plane: #0d0d0d;
-  --ink: #fff;
-  --ink-2: #c3c2b7;
-  --line: #2c2c2a;
-  --ring: rgba(255, 255, 255, .1);
-  --series-1: #3275c7;
-  --series-2: #c35022;
-  --series-3: #15855e;
+  --surface: #242a32;
+  --plane: #191f27;
+  --ink: #eff3f7;
+  --ink-2: #bdc7d2;
+  --ink-muted: #a5b0bc;
+  --line: #3b4653;
+  --ring: #0002;
+  --accent: #bdcee1;
+  --accent-soft: #303d4d;
+  --series-1: #9fb6d0;
+  --series-2: #c7af9a;
+  --series-3: #9fc1c6;
+  --series-4: #baafd0;
+  --series-5: #d0c195;
   --plan-invert: 1;
+  --shadow: 0 2px 8px #0002;
 }
-
 * { box-sizing: border-box; }
-
 body {
   margin: 0;
-  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
-  color: var(--ink);
-  background: var(--plane);
   height: 100dvh;
-  /* No pull-to-refresh or rubber-banding of the whole app: on a phone the gesture
-     that pans the map starts the same way as the one that reloads the page. */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--ink);
+  background: var(--surface);
   overscroll-behavior: none;
   -webkit-text-size-adjust: 100%;
-  /* Nothing may escape the viewport: if the page itself scrolls, the map has
-     grown past its box and its own scrolling is silently dead. */
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
 }
-
-.sr-only {
-  position: absolute;
-  width: 1px; height: 1px;
-  padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-/* The floors and the search box stay put while the room list scrolls
-   under them: with the list six floors long, the controls would otherwise be
-   somewhere above the top of the panel most of the time. */
-.controls {
-  position: sticky;
-  top: 0;
-  z-index: 2;
+button, input, select { font: inherit; color: inherit; }
+button, summary, select { -webkit-tap-highlight-color: transparent; }
+button, summary { cursor: pointer; }
+button { touch-action: manipulation; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.app-header {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px 0 8px;
+  align-items: center;
+  gap: 14px;
+  padding: max(17px, env(safe-area-inset-top)) max(28px, env(safe-area-inset-right)) 17px max(24px, env(safe-area-inset-left));
+  border-bottom: 1px solid var(--line);
+  z-index: 7;
   background: var(--surface);
 }
-
-/* The sheet's handle, and nowhere else: on any layout with room for a column, the
-   panel is that column and has nothing to drag. */
-.grip {
-  display: none;
-  width: 100%;
-  padding: 12px 0;
-  border: 0;
-  background: none;
-  cursor: grab;
-  touch-action: none;   /* the drag is ours, not the page's */
-}
-.grip::before {
-  content: "";
-  display: block;
-  width: 36px;
-  height: 4px;
-  margin: 0 auto;
-  border-radius: 999px;
-  background: var(--ink-muted);
-}
-
-button, input, select { font: inherit; color: inherit; }
-
-/* Six floors, six equal columns: in a panel this narrow, letting the buttons size
-   themselves is what makes them wrap onto a second row. */
-.floors { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
-.floors button {
-  padding: 5px 4px;
-  border: 1px solid var(--ring);
-  border-radius: 6px;
-  background: transparent;
-  cursor: pointer;
-}
-.floors button:hover { background: var(--plane); }
-.floors button[aria-current="true"] {
-  background: var(--ink);
-  color: var(--surface);
-  border-color: var(--ink);
-}
-
-/* Floating in the map's left corners: the panel toggle on the panel's own edge at
-   the top, the theme button at the bottom, opposite the zoom controls. */
-#theme, #collapse {
-  position: absolute;
-  left: 14px;
-  z-index: 5;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  backdrop-filter: blur(6px);
-  box-shadow: 0 2px 12px var(--ring);
-  font-size: 15px;
-  line-height: 1;
-  cursor: pointer;
-}
-#theme { bottom: 14px; }
-#collapse { top: 14px; }
-#theme:hover, #collapse:hover { background: var(--plane); }
-
-#q, .route select, .route .end {
-  width: 100%;
-  /* 16px, not the inherited 15: iOS zooms the whole page in when a field smaller
-     than that takes focus, and a zoomed page pans under one finger instead of
-     leaving the drag to the map. Not behind a media query — a device that reports
-     its pointer as fine would still do it. */
-  font-size: 16px;
-  padding: 6px 10px;
-  border: 1px solid var(--ring);
-  border-radius: 6px;
-  background: var(--plane);
-}
-
-/* The two ends of a walk. A label column narrow enough that the fields keep the
-   rest, which in a panel this narrow is all the room they get. */
-.route {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  align-items: center;
-  gap: 4px 8px;
-  font-size: 13px;
-  color: var(--ink-2);
-}
-/* Held open at one line whether or not there is anything in it. Arming an end writes
-   the note, filling one reveals Nullstill, and either appearing would otherwise push
-   the room list down between the two clicks that pick a walk — moving the row out from
-   under the cursor just as it is about to be clicked. */
-.route-foot {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  min-height: 1lh;
-  font-size: 12px;
-}
-.route-note { margin: 0; }
-
-/* Each end is a button that opens its own list of rooms. Not a <select>: an option
-   list drawn by the OS sits outside the page, where nothing can see the pointer move
-   over it, and lighting the room under the pointer on the plan is the point. */
-.route .end {
-  overflow: hidden;
-  text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  cursor: pointer;
-}
+.brand-mark { display: grid; place-items: center; width: 42px; height: 42px; color: var(--ink); background: transparent; }
+.brand-mark .icon { width: 32px; height: 32px; stroke-width: 1.25; color: var(--accent); }
+h1 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -.025em; }
+.brand-caption { margin: 1px 0 0; color: var(--ink-2); font-size: 12px; }
+.header-meta { margin-left: auto; display: flex; align-items: center; gap: 20px; color: var(--ink-2); font-size: 12px; }
+.header-meta > span { padding-right: 20px; border-right: 1px solid var(--line); }
+#theme, #collapse { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 4px; background: transparent; line-height: 1; }
+#theme { border-color: transparent; }
+#theme:hover, #collapse:hover { background: var(--accent-soft); }
+main { flex: 1; min-height: 0; display: grid; grid-template-columns: 344px minmax(0, 1fr); }
+main:has(#panel[hidden]) { grid-template-columns: 1fr; }
+#panel[hidden] { display: none; }
+aside { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--line); background: var(--surface); }
+.controls { flex: none; display: flex; flex-direction: column; gap: 20px; padding: 28px 24px 20px; border-bottom: 1px solid var(--line); }
+.intro h2 { margin: 0 0 4px; font-size: 28px; line-height: 1.25; font-weight: 500; letter-spacing: -.035em; }
+.intro p { margin: 0; color: var(--ink-2); font-size: 13px; }
+search { position: relative; display: block; }
+search .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-muted); pointer-events: none; }
+#q { width: 100%; height: 48px; padding: 10px 12px 10px 43px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); font-size: 16px; }
+#q::placeholder { color: var(--ink-muted); font-size: 14px; }
+#q:focus { border-color: var(--accent); outline-offset: 0; outline-width: 1px; }
+.field-caption { display: block; margin-bottom: 9px; color: var(--ink-2); font-size: 11px; font-weight: 650; letter-spacing: .09em; text-transform: uppercase; }
+.floors { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; padding: 3px; border-radius: 5px; background: var(--plane); }
+.floors button { min-height: 38px; padding: 6px 4px; border: 1px solid transparent; border-radius: 3px; background: transparent; font-weight: 500; font-variant-numeric: tabular-nums; }
+.floors button:hover { background: var(--surface); }
+.floors button[aria-current="true"] { color: var(--surface); background: var(--ink); }
+.route-panel { border-top: 1px solid var(--line); }
+.route-panel summary { display: flex; align-items: center; gap: 10px; padding: 16px 0 0; font-size: 13px; font-weight: 500; list-style: none; }
+.route-panel summary::-webkit-details-marker { display: none; }
+.route-panel summary .icon { color: var(--ink-2); }
+.route-panel summary::after { content: ''; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; rotate: 45deg; margin: -4px 2px 0 auto; }
+.route-panel[open] summary::after { rotate: 225deg; margin-top: 3px; }
+.route-panel summary:hover { color: var(--accent); }
+.route { display: grid; grid-template-columns: max-content minmax(0, 1fr); align-items: center; gap: 8px 10px; padding: 16px 0 0; color: var(--ink-2); font-size: 12px; }
+.route select, .route .end { width: 100%; min-height: 40px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); font-size: 16px; }
+.route .end { overflow: hidden; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
 .route .end:hover { background: var(--surface); }
 .route .end.empty { color: var(--ink-muted); }
-.route .end[aria-expanded="true"] {
-  border-color: var(--series-1);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--series-1) 30%, transparent);
-}
-
-/* The list itself. open() places it against its button, which is why the insets are
-   cleared here — a popover's own default is to sit in the middle of the window. */
-.picker {
-  position: fixed;
-  inset: auto;
-  margin: 0;
-  /* As wide as its longest room, but never narrower than the field it hangs off nor
-     wider than the window — a room list that scrolls sideways is a room list nobody
-     can read. open() sets the min-width, since only it knows the field. */
-  width: max-content;
-  max-width: min(90vw, 380px);
-  overflow: auto;
-  overscroll-behavior: contain;
-  padding: 4px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface);
-  box-shadow: 0 8px 28px var(--ring);
-  color: var(--ink);
-  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
-}
-.picker-floor {
-  padding: 8px 8px 2px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-  color: var(--ink-muted);
-}
-.picker-option {
-  overflow: hidden;
-  padding: 5px 8px;
-  border-radius: 6px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  cursor: pointer;
-}
-/* The arrows and the pointer land on the same class, so the list never shows two rows
-   as the current one — and it is filled, the way a native option list marks the row
-   the keyboard is on, not a tint that has to be hunted for. */
-.picker-option.active { background: var(--series-1); color: #fff; }
-.picker-option[aria-selected="true"] { font-weight: 600; }
-
-#clear {
-  flex: none;
-  /* No padding above or below: any and the button is taller than the line the row is
-     held open at, and revealing it shifts the list after all. */
-  padding: 0 6px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  font-size: 12px;
-  color: var(--ink-2);
-  text-decoration: underline;
-  cursor: pointer;
-}
-#clear:hover { background: var(--plane); }
-
-main {
-  flex: 1;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: minmax(240px, 300px) 1fr;
-  /* There is no header above us any more, so installed on a phone the plan would
-     otherwise start under the notch. */
-  padding-top: env(safe-area-inset-top);
-  background: var(--surface);
-}
-/* Collapsed, the panel is plain [hidden] and its column goes with it. This selector
-   outweighs the bare `main` rules in the media queries below, so the collapse holds
-   in every layout without being repeated in each of them. */
-main:has(#panel[hidden]) { grid-template-columns: 1fr; }
-/* [hidden] is a UA rule, and the sheet's own `display: flex` further down outranks
-   it, so say it here where it cannot be lost. */
-#panel[hidden] { display: none; }
-
-/* ---- map ---- */
-
-/* Both min-*: 0 are load-bearing. A grid item's automatic minimum size is its
-   min-content size, so without these .map refuses to shrink below the full height
-   of the plan, .viewport is handed that height, and nothing is left to scroll. */
-.map { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
-
-/* Floating over the plan's bottom right corner rather than sitting in a bar of its
-   own: the plan gets the whole panel, and the controls stay where the thumb is. */
-.toolbar {
-  position: absolute;
-  right: 14px;
-  bottom: 14px;
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  font-size: 13px;
-  color: var(--ink-2);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  backdrop-filter: blur(6px);
-  box-shadow: 0 2px 12px var(--ring);
-}
-.toolbar button {
-  flex: none;
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--ring);
-  border-radius: 6px;
-  background: var(--surface);
-  cursor: pointer;
-}
-.toolbar button.wide { width: auto; padding: 0 10px; }
-#zoom { width: 140px; accent-color: var(--series-1); }
-
-.viewport {
-  flex: 1;
-  overflow: auto;
-  overscroll-behavior: contain;
-  background: var(--surface);
-  touch-action: none;   /* we drive pan and pinch ourselves */
-  cursor: grab;
-}
+.route .end[aria-expanded="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.route-foot { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-height: 1lh; font-size: 12px; }
+.route-note { margin: 0; }
+#clear { flex: none; padding: 0 3px; border: 0; border-radius: 4px; background: transparent; color: var(--accent); font-size: 12px; text-decoration: underline; }
+.picker { position: fixed; inset: auto; margin: 0; width: max-content; max-width: min(90vw, 380px); overflow: auto; overscroll-behavior: contain; padding: 6px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); color: var(--ink); box-shadow: 0 8px 24px #0002; font: 14px/1.5 system-ui, sans-serif; }
+.picker-floor { padding: 10px 10px 4px; color: var(--ink-muted); font-size: 11px; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; }
+.picker-option { overflow: hidden; padding: 9px 10px; border-radius: 3px; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.picker-option.active { background: var(--ink); color: var(--surface); }
+.picker-option[aria-selected="true"] { font-weight: 650; }
+.directory { min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 20px 18px 24px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+.list-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 6px 18px; }
+.list-heading h2 { margin: 0; font-size: 13px; font-weight: 650; }
+#result-count { color: var(--ink-muted); font-size: 11px; }
+#list h2 { margin: 20px 0 5px; font-size: 12px; font-weight: 600; }
+#list h2:first-child { margin-top: 0; }
+.type { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 6px; border: 0; border-radius: 3px; background: transparent; color: var(--ink-2); font: inherit; text-align: left; }
+.type::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--c); flex: none; }
+.type::after { content: '−'; margin-left: auto; color: var(--ink-muted); font-size: 16px; line-height: 1; }
+.type[aria-pressed="false"] { color: var(--ink-muted); }
+.type[aria-pressed="false"]::before { background: none; border: 1px solid currentColor; }
+.type[aria-pressed="false"]::after { content: '+'; }
+.type:hover { background: var(--plane); }
+.rooms { list-style: none; margin: 0; padding: 0; }
+.rooms button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 42px; padding: 9px 12px 9px 21px; border: 0; border-radius: 3px; background: transparent; text-align: left; }
+.rooms button::after { content: ''; flex: none; width: 5px; height: 5px; margin-left: auto; border-top: 1px solid var(--ink-muted); border-right: 1px solid var(--ink-muted); rotate: 45deg; }
+.rooms button:hover { background: var(--plane); }
+.rooms button[aria-current="true"] { background: var(--accent-soft); color: var(--accent); box-shadow: inset 2px 0 0 var(--accent); }
+.rooms .code { font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rooms .meta { color: var(--ink-2); font-size: 12px; }
+.rooms .meta:empty { display: none; }
+.rooms .floor { margin-left: auto; flex: none; padding: 2px 6px; border-radius: 5px; background: var(--plane); color: var(--ink-2); font-size: 11px; }
+.rooms button:has(.floor)::after { display: none; }
+.empty { color: var(--ink-2); font-size: 13px; }
+#list > .empty { margin: 24px 6px; line-height: 1.8; }
+.map { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; isolation: isolate; }
+.map-heading { position: absolute; top: 22px; left: 22px; z-index: 5; display: flex; align-items: center; gap: 12px; padding: 9px 16px 9px 9px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); box-shadow: var(--shadow); }
+#collapse { width: 34px; height: 34px; border: 0; border-right: 1px solid var(--line); border-radius: 0; background: transparent; }
+#collapse[aria-expanded="false"] .icon { rotate: 180deg; }
+.map-heading strong { display: block; font-size: 13px; font-weight: 650; }
+.map-heading span { display: block; color: var(--ink-2); font-size: 11px; }
+.map-help { position: absolute; left: 24px; bottom: 25px; z-index: 5; margin: 0; display: flex; align-items: center; gap: 8px; color: var(--ink-2); font-size: 11px; pointer-events: none; }
+.map-help .icon { width: 16px; height: 16px; }
+.toolbar { position: absolute; right: 22px; bottom: 20px; z-index: 5; display: flex; align-items: center; gap: 5px; padding: 5px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); box-shadow: var(--shadow); color: var(--ink-2); }
+.toolbar button { display: grid; place-items: center; flex: none; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 3px; background: transparent; font-size: 21px; }
+.toolbar button:hover { background: var(--plane); }
+.toolbar button.wide { display: flex; gap: 7px; width: auto; margin-left: 6px; padding: 0 10px; border-left: 1px solid var(--line); border-radius: 0; font-size: 12px; }
+.toolbar .icon { width: 17px; height: 17px; }
+#zoom { width: 90px; height: 24px; accent-color: var(--accent); }
+.viewport { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; background-color: var(--plane); touch-action: none; cursor: grab; scrollbar-width: none; }
+.viewport::-webkit-scrollbar { display: none; }
 .viewport.dragging { cursor: grabbing; }
-/* Half a view of empty sheet on every side. A drag that runs into the plan's edge
-   stops dead and reads as a map that has stopped listening, so there is always
-   somewhere left to go — and never more than half a view of it, so the plan cannot
-   be pushed off the screen and lost.
-   A transparent border, of all things, because the other two ways of holding space
-   both have a catch: a margin's far side is the corner of scrollable overflow that
-   engines have historically disagreed about, and padding would stretch the box the
-   pills measure their percentages against. A border box is always scrollable, and
-   sits outside the padding box the pills use. content-box so the width still means
-   the image, which is what the zoom sets. */
-.plan {
-  position: relative;
-  box-sizing: content-box;
-  width: 100%;
-  /* Two values, so the width cannot ride along in the border shorthand. */
-  border: solid transparent;
-  border-width: 50svh 50vw;
-  user-select: none;
-}
-.plan img {
-  display: block;
-  width: 100%;
-  /* The plan's shape, held here so the box has its full height before the image does.
-     Changing floors points this element at a PNG that has never been loaded, and until
-     it arrives the image has no size of its own to give the box — centre() would then
-     aim at a plan 20px tall and the real one would come in below the window. Same two
-     numbers as PLAN_RATIO; build.py renders every floor at this size. */
-  aspect-ratio: 2659 / 1820;
-  /* iOS pops the image action menu on a press that lingers, and that cancels the
-     pointer stream the pan runs on — a drag that starts slowly would die. The
-     touch-action here only repeats the viewport's, where WebKit has been shaky
-     about inheriting it down to the element actually touched. */
-  -webkit-touch-callout: none;
-  touch-action: none;
-  filter: invert(var(--plan-invert)) hue-rotate(calc(var(--plan-invert) * 180deg));
-}
-
-/* The walk, drawn over the plan. Its viewBox is the plan's own pixel size, so the
-   box it fills has exactly that shape and nothing is stretched; non-scaling-stroke
-   then keeps the line the same weight at every zoom, the way the pills keep their
-   size. inset: 0 is the padding box — the same box the pills measure against, not
-   the empty border around it. */
-.route-line {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  /* No z-index: the pills are positioned too and mostly sit at auto, so a stacking
-     order of its own here would put the line over them instead of under. Its place
-     in the plan — after the image, before the pills — already says where it goes. */
-  pointer-events: none;
-}
-.route-line path {
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
-}
-/* Drawn twice: a casing in the surface colour first, so the line reads over the
-   line work of the plan underneath it. */
+/* The transparent border is pan space; percentages stay relative to the drawing. */
+.plan { position: relative; box-sizing: content-box; width: 100%; border: solid transparent; border-width: 50svh 50vw; user-select: none; }
+.plan img { display: block; width: 100%; aspect-ratio: 2659 / 1820; -webkit-touch-callout: none; touch-action: none; filter: invert(var(--plan-invert)) hue-rotate(calc(var(--plan-invert) * 180deg)); mix-blend-mode: multiply; opacity: .72; }
+:root[data-theme="dark"] .plan img { mix-blend-mode: screen; opacity: .6; }
+.route-line { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.route-line path { fill: none; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .route-line .casing { stroke: var(--surface); stroke-width: 7; opacity: .85; }
-.route-line .line { stroke: var(--series-1); stroke-width: 3; }
-.route-line circle { fill: var(--series-1); stroke: var(--surface); stroke-width: 8; }
-
+.route-line .line { stroke: var(--accent); stroke-width: 3; }
+.route-line circle { fill: var(--accent); stroke: var(--surface); stroke-width: 8; }
 .marker {
   position: absolute;
   left: var(--x);
   top: var(--y);
   translate: -50% -50%;
-  padding: 2px 6px;
-  /* Filled with the type colour, white on top: the type reads from across the
-     room instead of from a 2px ring. The outer ring of surface colour lifts the
-     pill clear of the line work printed underneath it. */
-  border: 0;
-  border-radius: 999px;
-  box-shadow: 0 0 0 2px var(--surface);
-  font: 700 11px/1.35 system-ui, sans-serif;
+  padding: 2px 5px;
+  border: 1px solid color-mix(in srgb, var(--ink) 55%, var(--surface));
+  border-left: 3px solid var(--c);
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px var(--surface), 0 2px 4px #26323f2b;
+  font: 600 11px/1.35 system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
-  letter-spacing: .02em;
   white-space: nowrap;
-  color: #fff;
-  background: var(--c);
-  cursor: pointer;
-}
-/* The cup is the whole label, with no room number beside it to set the pill's size:
-   at the 11px the numbers are set in it reads as a speck. Attribute selector, so
-   the touch-target rule further down does not shrink it back. */
-.marker[data-type="Kaffemaskiner"] {
-  /* No pill: the cup is the whole marker, so the pill's fill and ring come off and the
-     box is left as the touch target, held still so the anchor point does not move. */
-  padding: 0;
-  width: 31px;
-  height: 25px;
-  display: grid;
-  place-items: center;
-  background: none;
-  box-shadow: none;
-  font-size: 17px;
-  line-height: 1;
-  /* The job the pill's surface ring did: hold the cup clear of the line work printed
-     underneath it, now that nothing is painted behind the glyph. */
-  filter: drop-shadow(0 0 2px var(--surface)) drop-shadow(0 0 2px var(--surface));
-}
-/* Singled out — hovered, pointed at from the panel, or standing on a route — with no
-   pill to wear a ring, the cup's own size is what says so. */
-.marker[data-type="Kaffemaskiner"]:is(:hover, :focus-visible, .hot, .via, [aria-current="true"]) {
-  box-shadow: none;
-  font-size: 24px;
+  color: var(--ink);
+  background: var(--surface);
 }
 .marker[data-color="1"] { --c: var(--series-1); }
 .marker[data-color="2"] { --c: var(--series-2); }
 .marker[data-color="3"] { --c: var(--series-3); }
 .marker[data-color="4"] { --c: var(--series-4); }
 .marker[data-color="5"] { --c: var(--series-5); }
-.marker:hover, .marker:focus-visible, .marker.hot, .marker.via { z-index: 3; scale: 1.25; }
-/* Pointed at from the panel — a room row, or a whole type's heading — the pills wear
-   the ring the selected one wears, so the answer to "where is that" is on the plan
-   before anything is clicked. */
-/* .via is the same ring, worn by the two ends of a route for as long as it is set —
-   its own class rather than .hot, which a passing mouse clears. */
-.marker.hot, .marker.via { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--c); }
-/* Searched past, or standing next to what the panel is pointing at: either way the
-   pill steps back rather than disappearing, since it is still a room on this floor.
-   The one being pointed at comes back to full even if the search had faded it. */
-.marker.faded, .plan.pointing .marker:not(.hot) { opacity: .25; }
+.marker:is(:hover, :focus-visible, .hot, .via) { z-index: 3; scale: 1.1; }
+.marker.hot, .marker.via { border-color: var(--accent); box-shadow: 0 0 0 1px var(--surface), 0 0 0 2px var(--accent); }
+.marker.faded, .plan.pointing .marker:not(.hot) { opacity: .2; }
 .plan.pointing .marker.hot { opacity: 1; }
-.marker[aria-current="true"] {
-  z-index: 4;
-  scale: 1.35;
-  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--c);
+.marker[aria-current="true"] { z-index: 4; scale: 1.15; color: var(--surface); background: var(--ink); border-color: var(--ink); box-shadow: 0 0 0 2px var(--surface); }
+.marker[data-type="Kaffemaskiner"] { padding: 0; border: 0; width: 31px; height: 25px; display: grid; place-items: center; background: none; box-shadow: none; font-size: 17px; line-height: 1; filter: drop-shadow(0 0 2px var(--surface)) drop-shadow(0 0 2px var(--surface)); }
+.marker[data-type="Kaffemaskiner"]:is(:hover, :focus-visible, .hot, .via, [aria-current="true"]) { box-shadow: none; font-size: 24px; }
+.grip { display: none; width: 100%; padding: 14px 0 8px; border: 0; background: none; cursor: grab; touch-action: none; }
+.grip::before { content: ''; display: block; width: 34px; height: 4px; margin: 0 auto; border-radius: 99px; background: var(--line); }
+@media (prefers-reduced-motion: no-preference) {
+  button, summary { transition: background-color .15s, color .15s, border-color .15s; }
+  .marker { transition: opacity .15s, scale .15s; }
 }
-
-/* ---- panel ---- */
-
-aside {
-  border-right: 1px solid var(--line);
-  background: var(--surface);
-  overflow: auto;
-  min-height: 0;   /* same reason as .map */
-  /* No padding at the top: it belongs to .controls, which is sticky, so the list
-     must not scroll through a gap above it. */
-  padding: 0 max(14px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom))
-           max(14px, env(safe-area-inset-left));
+@media (max-width: 1100px) {
+  main { grid-template-columns: 310px minmax(0, 1fr); }
+  .controls { padding: 24px 20px 18px; gap: 16px; }
+  .map-help { display: none; }
 }
-
-h2 {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-  margin: 14px 0 4px;
+@media (max-height: 760px) and (min-width: 721px) {
+  .controls { padding-top: 18px; gap: 14px; }
+  .intro h2 { font-size: 23px; }
+  .intro p { display: none; }
 }
-/* The group heading is the type filter: clicking it hides that type's rooms from
-   the plan, and the heading stays behind — dimmed — as the way back. */
-.type {
-  display: block;
-  width: 100%;
-  padding: 3px 6px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  font: inherit;
-  text-align: left;
-  /* The type's own colour, pushed towards the text colour: the fills these hues
-     were picked for carry white text, and as text on the panel they need the
-     extra contrast in both themes. */
-  color: color-mix(in oklab, var(--c) 70%, var(--ink));
-  cursor: pointer;
-}
-.type[aria-pressed="false"] { color: var(--ink-muted); }
-.type:hover { background: var(--plane); }
-.rooms { list-style: none; margin: 0; padding: 0; }
-.rooms button {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  width: 100%;
-  padding: 5px 6px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-}
-.rooms button:hover { background: var(--plane); }
-.rooms button[aria-current="true"] { background: var(--plane); box-shadow: inset 2px 0 0 var(--ink); }
-.rooms .code { font-weight: 600; font-variant-numeric: tabular-nums; }
-.rooms .meta { color: var(--ink-2); font-size: 13px; }
-.rooms .floor {
-  margin-left: auto;
-  font-size: 11px;
-  color: var(--ink-2);
-  border: 1px solid var(--ring);
-  border-radius: 4px;
-  padding: 0 5px;
-}
-.empty { color: var(--ink-2); font-size: 13px; padding: 8px 0; }
-
-/* Narrow laptops: the panel gives width back to the plan before the layout has to
-   break into one column. */
-@media (max-width: 1024px) {
-  main { grid-template-columns: minmax(200px, 250px) 1fr; }
-}
-
-/* Two fingers already zoom the plan on a phone, and picking a room zooms in by
-   itself, so the slider only costs height. */
 @media (max-width: 720px) {
-  .toolbar { display: none; }
+  .app-header { padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left)); gap: 10px; }
+  .brand-mark { width: 30px; height: 36px; }
+  h1 { font-size: 15px; }
+  .brand-caption { font-size: 11px; }
+  .header-meta { margin-left: auto; }
+  .header-meta > span { display: none; }
+  #theme { width: 36px; height: 36px; }
+  .map-heading { top: 14px; left: 14px; padding: 10px 14px; }
+  .toolbar { right: 14px; bottom: 14px; }
+  #zoom { display: none; }
+  .toolbar button.wide { margin-left: 0; }
 }
-
-/* A phone held upright: the plan takes the whole window, and the panel sits over its
-   bottom edge as a translucent bar — the floors, the count and the search box — that
-   the grip drags up into the room list. */
 @media (max-width: 720px) and (orientation: portrait) {
   main { grid-template-columns: 1fr; grid-template-rows: 1fr; }
-
-  aside {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 6;               /* over the buttons floating on the plan */
-    max-height: 88dvh;        /* also the ceiling on a drag, which sets a height */
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;         /* the list inside scrolls; the sheet itself never does */
-    border: 0;
-    border-top: 1px solid var(--line);
-    border-radius: 14px 14px 0 0;
-    background: color-mix(in srgb, var(--surface) 80%, transparent);
-    backdrop-filter: blur(12px);
-    box-shadow: 0 -2px 20px var(--ring);
-  }
-  /* Closed, the sheet is as tall as the bar it holds; open, it is a fixed slice of
-     the window with the list scrolling in whatever is left under the controls. */
-  aside.open { height: 70dvh; }
-  /* Shut, the sheet is a bar: the floors and the search box, and nothing that would
-     cost the plan another 80px of height. The route fields come up with the list. */
-  aside:not(.open) #list, aside:not(.open) .route { display: none; }
-  #list { flex: 1; overflow: auto; overscroll-behavior: contain; }
-
-  .grip { display: block; }
-  /* The grip is the way to put the panel away here, so the button that does it on a
-     laptop only takes up plan. And since it is gone, a panel left [hidden] by a
-     wider layout has to come back, or nothing could bring it back. */
+  aside { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; max-height: calc(100dvh - 80px - env(safe-area-inset-top)); padding-bottom: max(16px, env(safe-area-inset-bottom)); border: 0; border-top: 1px solid var(--line); border-radius: 10px 10px 0 0; box-shadow: 0 -4px 20px #26323f0b; overflow: hidden; }
+  aside.open { height: 72dvh; }
+  aside:not(.open) .directory, aside:not(.open) .route-panel, aside:not(.open) .intro { display: none; }
+  .controls { flex-shrink: 0; gap: 14px; padding: 8px 20px 14px; }
+  aside:not(.open) .controls { border-bottom: 0; padding-bottom: 0; }
+  .intro h2 { font-size: 23px; }
+  .intro p { display: none; }
+  .field-caption { margin-bottom: 7px; font-size: 10px; }
+  .floors button { min-height: 42px; }
+  .grip { display: block; flex: none; }
   #collapse { display: none; }
   #panel[hidden] { display: flex; }
-  /* The bottom left corner belongs to the sheet down here. */
-  #theme { top: 14px; bottom: auto; left: auto; right: 14px; }
+  .directory { flex: 1; padding-top: 16px; }
+  .toolbar { top: 14px; bottom: auto; }
+  .toolbar button { width: 34px; height: 34px; }
+  .toolbar button.wide { font-size: 0; gap: 0; padding: 0 8px; }
+  .map-heading span { display: none; }
+  aside.open:has(.route-panel[open]) .controls { flex-shrink: 1; min-height: 0; overflow: auto; }
+  aside.open:has(.route-panel[open]) .directory { flex-shrink: 0; min-height: 90px; }
 }
-
-/* A phone on its side has the width for two columns and nowhere near the height for
-   the sheet, so it keeps the desktop layout, only narrower. */
 @media (max-width: 720px) and (orientation: landscape) {
-  main { grid-template-columns: minmax(180px, 40%) 1fr; }
+  .app-header { padding-top: 6px; padding-bottom: 6px; }
+  main { grid-template-columns: minmax(230px, 40%) minmax(0, 1fr); }
+  aside { overflow: auto; }
+  .controls { padding: 14px; gap: 12px; }
+  .intro { display: none; }
+  .directory { overflow: visible; }
 }
-
-/* Fingers, not a cursor: everything hittable grows to roughly 44px, and the pills
-   on the plan grow with it. */
 @media (pointer: coarse) {
-  .floors button { min-height: 40px; }
-  #theme, #collapse, .toolbar button { width: 40px; height: 40px; }
-  #q { padding: 9px 10px; }
-  #zoom { height: 32px; }
-  .type { padding: 8px 6px; }
-  .picker-option { padding: 9px 8px; }
-  .grip { padding: 14px 0; }
-  .rooms button { padding: 9px 6px; }
+  .type, .rooms button, .picker-option { min-height: 44px; }
   .marker { padding: 4px 8px; font-size: 12px; }
 }
 </style>
 </head>
 <body>
 
-<!-- The title lives in <title> and in the app name; on screen the floor buttons took
-     its place. It stays here for screen readers, which need a heading — outside the
-     panel, which is gone from the page while collapsed. -->
-<h1 class="sr-only">Kart – Grensesvingen 6</h1>
+<header class="app-header">
+  <div class="brand-mark" aria-hidden="true">
+    <svg class="icon" viewBox="0 0 24 24"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2Z M9 3v16 M15 5v16"/></svg>
+  </div>
+  <div><h1>Grensesvingen 6</h1><p class="brand-caption">Rom og etasjer</p></div>
+  <div class="header-meta"><span>Etasje 3–8</span><button type="button" id="theme"></button></div>
+</header>
 
 <main>
   <aside id="panel">
@@ -628,8 +301,16 @@ h2 {
     <button type="button" class="grip" id="grip" aria-expanded="false"
             aria-controls="list" aria-label="Vis eller skjul romlisten"></button>
     <div class="controls">
-      <nav class="floors" id="floors" aria-label="Etasje"></nav>
-      <div class="route">
+      <div class="intro"><h2>Hvor skal du?</h2><p>Finn rommet. Bli kjent med kontoret.</p></div>
+      <search>
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+        <input id="q" type="search" aria-label="Søk etter rom i alle etasjer"
+               placeholder="Søk etter rom eller romtype" autocomplete="off">
+      </search>
+      <div><span class="field-caption">Velg etasje</span><nav class="floors" id="floors" aria-label="Etasje"></nav></div>
+      <details class="route-panel" id="route-panel">
+        <summary><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="18" r="2"/><path d="M7 6h9a4 4 0 0 1 0 8H8a4 4 0 0 0 0 8" transform="translate(0 -2)"/></svg>Planlegg en rute</summary>
+        <div class="route">
         <!-- aria-labelledby names the button after the word beside it and then its own
              text, so it reads "Fra, N 372 · 3. et." rather than just the room. -->
         <span id="from-label">Fra</span>
@@ -651,22 +332,27 @@ h2 {
           <p class="route-note" id="route-note" aria-live="polite"></p>
           <button type="button" id="clear" hidden>Nullstill</button>
         </div>
-      </div>
-      <search>
-        <input id="q" type="search" aria-label="Søk etter rom"
-               placeholder="Søk etter rom, f.eks. 372" autocomplete="off">
-      </search>
+        </div>
+      </details>
     </div>
-    <div id="list"></div>
+    <div class="directory">
+      <div class="list-heading"><h2 id="list-title">Rom i etasjen</h2><span id="result-count" role="status"></span></div>
+      <div id="list" aria-labelledby="list-title"></div>
+    </div>
   </aside>
 
-  <section class="map">
-    <div class="toolbar">
-      <label for="zoom">Zoom</label>
+  <section class="map" aria-label="Etasjekart">
+    <div class="map-heading">
+      <button type="button" id="collapse" aria-expanded="true" aria-controls="panel"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 7-5 5 5 5"/></svg></button>
+      <div><strong id="map-floor">3. etasje</strong><span>Grensesvingen 6</span></div>
+    </div>
+    <p class="map-help"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4-4 4 4 4 M4 8h12 M16 20l4-4-4-4 M20 16H8"/></svg>Dra for å utforske · Velg et rom for å se hvor det er</p>
+    <div class="toolbar" role="group" aria-label="Kartvisning">
+      <label for="zoom" class="sr-only">Zoom</label>
       <button type="button" id="out" aria-label="Zoom ut">−</button>
       <input id="zoom" type="range" min="100" max="450" step="1" value="100">
       <button type="button" id="in" aria-label="Zoom inn">+</button>
-      <button type="button" id="fit" class="wide">Tilpass</button>
+      <button type="button" id="fit" class="wide" aria-label="Tilpass kartet" title="Tilpass kartet"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5 M16 3h5v5 M21 16v5h-5 M8 21H3v-5"/></svg>Tilpass</button>
     </div>
     <div class="viewport" id="viewport">
       <div class="plan" id="plan">
@@ -678,8 +364,6 @@ h2 {
         <svg class="route-line" id="route-line" viewBox="0 0 2659 1820" aria-hidden="true"></svg>
       </div>
     </div>
-    <button type="button" id="collapse" aria-expanded="true" aria-controls="panel"></button>
-    <button type="button" id="theme"></button>
   </section>
 </main>
 
@@ -690,7 +374,7 @@ h2 {
 
 <script>
 const FLOOR_ORDER = ['3', '4', '5', '6', '7', '8'];
-const TYPE_ORDER = ['Print/kopi', 'Kaffemaskiner', 'Møterom', 'Multirom', 'WC', 'Prosjektrom', 'Pod 1p', 'Podcast webrom', 'Sosial sone', 'Hvilerom', 'Datarom'];
+const TYPE_ORDER = ['Møterom', 'Multirom', 'Kaffemaskiner', 'Print/kopi', 'WC', 'Prosjektrom', 'Pod 1p', 'Podcast webrom', 'Sosial sone', 'Hvilerom', 'Datarom'];
 // Five validated categorical hues. The two meeting-room types, the toilets and the
 // print room are what people scan the plan for, so they get their own; everything
 // else shares slot 3. The exact type is always spelled out in text, never colour
@@ -802,7 +486,7 @@ function roomButton(r, showFloor) {
   code.textContent = r.code || '—';
   const meta = document.createElement('span');
   meta.className = 'meta';
-  meta.textContent = nameOf(r) || r.type;
+  meta.textContent = nameOf(r) || (r.code ? '' : r.type);
   b.append(code, meta);
 
   if (showFloor) {
@@ -857,9 +541,11 @@ function renderList(query) {
   if (!groups.length) {
     groups.push(Object.assign(document.createElement('p'), {
       className: 'empty',
-      textContent: 'Ingen treff.',
+      textContent: 'Ingen rom funnet. Prøv et annet romnummer eller en romtype.',
     }));
   }
+  document.getElementById('list-title').textContent = query ? 'Søkeresultater · alle etasjer' : 'Rom i etasjen';
+  document.getElementById('result-count').textContent = `${hits.filter(r => !hidden.has(r.type)).length} rom`;
   el.list.replaceChildren(...groups);
 }
 
@@ -867,6 +553,7 @@ function render() {
   const query = norm(el.q.value);
   el.img.src = `plan-${floor}.png`;
   el.img.alt = `Plantegning ${floor}. etasje`;
+  document.getElementById('map-floor').textContent = `${floor}. etasje`;
   renderFloors();
   renderMarkers(query);
   renderList(query);
@@ -953,10 +640,15 @@ function setZoom(v, anchorX, anchorY) {
 
 function select(target, zoomIn) {
   selected = target;
+  if (zoomIn && getComputedStyle(el.panel).position === 'fixed') {
+    setSheet(false);
+    el.q.blur();
+  }
   if (zoomIn && Number(el.zoom.value) < 200) setZoom(200);
   render();
   const marker = [...el.plan.querySelectorAll('.marker')].find(m => m.dataset.id === target);
-  if (marker) marker.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
+  if (marker) marker.scrollIntoView({ block: 'center', inline: 'center',
+    behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   // The row is already marked current; bring it into the panel too, so a pill
   // clicked on the map points at its own row. 'nearest' so a row that is already
   // visible — the usual case when the click came from the panel — stays put.
@@ -1004,6 +696,7 @@ function fromHash() {
   const params = new URLSearchParams(query);
   via = CORE[params.get('via')] ? params.get('via') : 'heis';
   trip = { from: pick(params.get('fra')), to: pick(params.get('til')) };
+  document.getElementById('route-panel').open = Boolean(trip.from || trip.to);
   el.via.value = via;
 
   floor = f;
@@ -1443,15 +1136,15 @@ el.via.onchange = () => {
 // giving up following the system forever. No stored value means follow.
 const systemDark = matchMedia('(prefers-color-scheme: dark)');
 const THEMES = {
-  '': { icon: '◐', text: 'Tema: følger systemet', next: 'light' },
-  light: { icon: '☀', text: 'Tema: lyst', next: 'dark' },
-  dark: { icon: '☾', text: 'Tema: mørkt', next: '' },
+  '': { icon: '<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16Z" fill="currentColor" stroke="none"/>', text: 'Tema: følger systemet', next: 'light' },
+  light: { icon: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2 M12 20v2 M2 12h2 M20 12h2 M5 5l1.5 1.5 M17.5 17.5 19 19 M5 19l1.5-1.5 M17.5 6.5 19 5"/>', text: 'Tema: lyst', next: 'dark' },
+  dark: { icon: '<path d="M20.5 13.5A8.5 8.5 0 0 1 10.5 3a8.5 8.5 0 1 0 10 10.5Z"/>', text: 'Tema: mørkt', next: '' },
 };
 
 function applyTheme() {
   const choice = localStorage.theme || '';
   document.documentElement.dataset.theme = choice || (systemDark.matches ? 'dark' : 'light');
-  el.theme.textContent = THEMES[choice].icon;
+  el.theme.innerHTML = `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${THEMES[choice].icon}</svg>`;
   el.theme.title = THEMES[choice].text;
   el.theme.setAttribute('aria-label', THEMES[choice].text);
 }
@@ -1473,7 +1166,6 @@ applyTheme();
 function setPanel(open) {
   el.panel.toggleAttribute('hidden', !open);
   el.collapse.setAttribute('aria-expanded', String(open));
-  el.collapse.textContent = open ? '◀' : '▶';
   const text = open ? 'Skjul panelet' : 'Vis panelet';
   el.collapse.title = text;
   el.collapse.setAttribute('aria-label', text);
@@ -1612,6 +1304,9 @@ el.viewport.addEventListener('wheel', e => {
 }, { passive: false });
 
 /* ---------- wiring ---------- */
+
+// Reveal search results when the phone's directory is a collapsed sheet.
+el.q.onfocus = () => setSheet(true);
 
 // A search covers every floor, and the list says so. Follow it on the plan too: if
 // nothing on the floor being shown matches, switch to the lowest floor that does,

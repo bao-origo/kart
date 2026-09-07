@@ -47,6 +47,9 @@ const typeFilter = (t) => [...d.querySelectorAll(".type")].find(b => b.textConte
 assert.equal(markers().length, count("3"));
 assert.equal(listed().length, count("3"));
 assert.match(d.querySelector("#planimg").src, /plan-3\.png$/);
+assert.equal(d.querySelector("#map-floor").textContent, "3. etasje");
+assert.equal(d.querySelector("#result-count").textContent, `${count("3")} rom`);
+assert.equal(d.querySelector("#route-panel").open, false);
 
 // Floor switching swaps plan and markers together.
 floorButton("7").click();
@@ -79,6 +82,7 @@ search("");
 typeFilter("Multirom").click();
 assert.equal(markers().length, count("3") - count("3", "Multirom"));
 assert.equal(listed().length, count("3") - count("3", "Multirom"));
+assert.equal(d.querySelector("#result-count").textContent, `${listed().length} rom`);
 assert.equal(typeFilter("Multirom").getAttribute("aria-pressed"), "false");
 typeFilter("Multirom").click();
 assert.equal(markers().length, count("3"));
@@ -238,6 +242,24 @@ drag(-60);
 assert.equal(open(), false, "dragged down");
 drag(10);
 assert.equal(open(), false, "too short to snap the other way");
+
+// A phone search reveals its results; choosing one puts the map back in view.
+panel.style.position = "fixed";
+d.querySelector("#q").focus();
+assert.ok(open());
+assert.equal(grip.getAttribute("aria-expanded"), "true");
+const phoneHits = search("372");
+assert.match(d.querySelector("#list-title").textContent, /alle etasjer/);
+assert.equal(d.querySelector("#result-count").textContent, "1 rom");
+phoneHits[0].click();
+assert.equal(open(), false);
+assert.notEqual(d.activeElement, d.querySelector("#q"));
+assert.equal(d.querySelector("#map-floor").textContent, "3. etasje");
+search("no-such-room");
+assert.equal(d.querySelector("#result-count").textContent, "0 rom");
+assert.match(d.querySelector("#list .empty").textContent, /Prøv/);
+search("");
+panel.style.position = "";
 
 // Each end of a walk opens a listbox of every room. It is not a <select>, so the rest
 // of this section is what a <select> would have done for free: opening, the arrows,
@@ -464,12 +486,14 @@ assert.match(from.textContent, /S 422 · 4\. et\./);
 assert.match(to.textContent, /N 672 · 6\. et\./);
 assert.equal(via.value, "trapp");
 assert.match(note(), /S 422.*trappen.*N 672/);
+assert.equal(d.querySelector("#route-panel").open, true, "a shared route reveals its controls");
 assert.equal(line(), null, "floor 7 is neither end of that walk");
 
 // A link from before the route fields existed still means what it did.
 w.location.hash = "#8/N857";
 w.onhashchange();
 assert.equal(current().textContent, "N 857");
+assert.equal(d.querySelector("#route-panel").open, false);
 assert.match(from.textContent, /Velg rom/, "no walk in the link, no walk on the map");
 assert.equal(line(), null);
 
