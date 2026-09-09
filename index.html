@@ -194,8 +194,11 @@ search .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-muted
 .marker.faded, .plan.pointing .marker:not(.hot) { opacity: .2; }
 .plan.pointing .marker.hot { opacity: 1; }
 .marker[aria-current="true"] { z-index: 4; scale: 1.15; box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--c); }
-.marker[data-type="Kaffemaskiner"] { padding: 0; border: 0; width: 31px; height: 25px; display: grid; place-items: center; background: none; box-shadow: none; font-size: 17px; line-height: 1; filter: drop-shadow(0 0 2px var(--surface)) drop-shadow(0 0 2px var(--surface)); }
-.marker[data-type="Kaffemaskiner"]:is(:hover, :focus-visible, .hot, .via, [aria-current="true"]) { box-shadow: none; font-size: 24px; }
+.marker[data-type="Kaffemaskiner"] { padding: 0; border: 0; width: 40px; height: 34px; display: grid; place-items: center; background: none; box-shadow: none; font-size: 27px; line-height: 1; filter: drop-shadow(0 0 2px var(--surface)) drop-shadow(0 0 2px var(--surface)); }
+/* Grows and shrinks with scale alone. font-size is not transitioned, so changing it
+   as well snapped the cup to its new size the moment the pointer crossed the marker
+   and then eased the rest of the way — most visible on the way back out. */
+.marker[data-type="Kaffemaskiner"]:is(:hover, :focus-visible, .hot, .via, [aria-current="true"]) { box-shadow: none; scale: 1.26; }
 .grip { display: none; width: 100%; padding: 14px 0 8px; border: 0; background: none; cursor: grab; touch-action: none; }
 .grip::before { content: ''; display: block; width: 34px; height: 4px; margin: 0 auto; border-radius: 99px; background: var(--line); }
 @media (prefers-reduced-motion: no-preference) {
