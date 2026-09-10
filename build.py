@@ -47,6 +47,8 @@ MATCH_RADIUS = 60
 
 # Rooms the drawings do not label at all, so nothing here can be read off the sheet.
 # The eighth floor's coffee machine is named on the machine and nowhere else.
+# S 850 is the long room along the south wing's south side: the drawing carries the
+# four codes 851-854 of the offices it used to be, and no type label of its own.
 EXTRA = {
     "8": [
         {
@@ -55,7 +57,13 @@ EXTRA = {
             "x": 0.3014,
             "y": 0.7904,
             "name": "Coffee Queen",
-        }
+        },
+        {
+            "type": "Møterom",
+            "code": "S 850",
+            "x": 0.5611,
+            "y": 0.8253,
+        },
     ],
 }
 
