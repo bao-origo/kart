@@ -76,6 +76,13 @@ hits[0].click();
 assert.equal(w.location.hash, "#3/N372");
 assert.equal(current().textContent, "N 372");
 
+// The search's own × empties it in one tap and puts the floor's rooms back.
+search("372");
+d.getElementById("q-clear").click();
+assert.equal(d.querySelector("#q").value, "");
+assert.equal(d.querySelector("#list-title").textContent, "Rom i etasjen");
+assert.equal(markers().length, count(d.querySelector("#map-floor").textContent[0]));
+
 // The group headings are the type filters: clicking one hides that type's markers
 // and its rows, and the heading stays behind as the way back.
 search("");
@@ -175,6 +182,26 @@ const wasSelected = selected();
 [...markers()].find(m => m.textContent !== wasSelected).click();
 assert.equal(selected(), wasSelected, "the gesture's own click is swallowed");
 
+// Safari keeps scroll offsets in whole pixels, rounded down. A slow finger feeds in a
+// fraction of a pixel per event, and the plan must still go where the finger went —
+// rounded each time, it stalled one way and ran 2.5 times too far the other.
+let sx = 500, sy = 500;
+Object.defineProperty(viewport, "scrollLeft", { configurable: true, get: () => sx, set: v => { sx = Math.floor(v); } });
+Object.defineProperty(viewport, "scrollTop", { configurable: true, get: () => sy, set: v => { sy = Math.floor(v); } });
+const slowDrag = (step) => {
+  pointer("pointerdown", 4, 100, viewport);
+  for (let i = 1; i <= 50; i++) {
+    w.dispatchEvent(new w.PointerEvent("pointermove", { pointerId: 4, clientX: 100 + i * step, clientY: 100 + i * step, bubbles: true }));
+  }
+  w.dispatchEvent(new w.PointerEvent("pointercancel", { pointerId: 4, bubbles: true }));   // no coast
+};
+slowDrag(0.4);
+assert.ok(Math.abs(sx - 480) <= 1 && Math.abs(sy - 480) <= 1, `a slow pan right and down lands at ${sx},${sy}, not 480,480`);
+slowDrag(-0.4);
+assert.ok(Math.abs(sx - 500) <= 1 && Math.abs(sy - 500) <= 1, `a slow pan left and up lands at ${sx},${sy}, not 500,500`);
+delete viewport.scrollLeft;   // back to jsdom's own
+delete viewport.scrollTop;
+
 // Only that click, though. A later one — keyboard Enter on a marker, which sends
 // no pointer events at all — has to get through.
 pointer("pointerdown", 1, 100, viewport);
@@ -185,6 +212,20 @@ const wanted = [...markers()].find(m => m.textContent !== selected());
 const wantedCode = wanted.textContent;
 wanted.click();
 assert.equal(selected(), wantedCode, "a click well after a drag selects");
+
+// A finger cannot hover for a pill's title, so the heading says what was picked.
+const mapRoom = d.getElementById("map-room");
+assert.ok(mapRoom.textContent.startsWith(wantedCode), "the heading names the picked room");
+assert.ok(mapRoom.classList.contains("room"));
+
+// Two taps close together zoom in on where they landed.
+d.getElementById("fit").click();
+const zoomBeforeTaps = zoomValue();
+for (let i = 0; i < 2; i++) {
+  pointer("pointerdown", 3, 150, viewport);
+  pointer("pointerup", 3, 150, viewport);
+}
+assert.equal(zoomValue(), Math.min(450, zoomBeforeTaps * 2), "a double tap zooms in");
 
 // The theme button cycles system -> light -> dark -> system and remembers the pick.
 const themeButton = d.getElementById("theme");
@@ -221,11 +262,12 @@ assert.equal(d.querySelector("h1").closest("aside"), null, "the heading outlives
 // stylesheet knows this is a phone; the behaviour is the same wherever it runs.)
 const grip = d.getElementById("grip");
 const open = () => panel.classList.contains("open");
-const drag = (dy) => {
-  pointer("pointerdown", 9, 0, grip);          // the helper starts every one at y 100
+const drag = (dy, from = grip) => {
+  pointer("pointerdown", 9, 0, from);          // the helper starts every one at y 100
   for (const type of ["pointermove", "pointerup"]) {
     w.dispatchEvent(new w.PointerEvent(type, { pointerId: 9, clientY: 100 - dy, bubbles: true }));
   }
+  from.click();   // a mouse drag that ends where it began clicks there too
 };
 
 assert.equal(open(), false, "the sheet starts as the bar");
@@ -242,17 +284,38 @@ drag(-60);
 assert.equal(open(), false, "dragged down");
 drag(10);
 assert.equal(open(), false, "too short to snap the other way");
+grip.click();
+assert.ok(open(), "a tap after a drag is a tap");
+grip.click();
+
+// The controls drag it too, but only where the stylesheet hands them the gesture —
+// on a phone held upright — and a drag ending on a floor button does not press it.
+const controls = d.querySelector(".controls");
+const caption = d.querySelector(".field-caption");
+drag(60, caption);
+assert.equal(open(), false, "the controls drag nothing until the stylesheet says so");
+controls.style.touchAction = "pinch-zoom";
+const floorBefore = d.querySelector("#map-floor").textContent;
+const otherFloor = floorBefore.startsWith("5") ? "6" : "5";
+drag(60, floorButton(otherFloor));
+assert.ok(open(), "dragged up by a floor button");
+assert.equal(d.querySelector("#map-floor").textContent, floorBefore, "the drag's own click presses nothing");
+drag(-60, caption);
+assert.equal(open(), false, "dragged down by the controls");
+controls.style.touchAction = "";
 
 // A phone search reveals its results; choosing one puts the map back in view.
 panel.style.position = "fixed";
 d.querySelector("#q").focus();
 assert.ok(open());
+assert.ok(panel.classList.contains("full"), "a search raises the sheet clear of the keyboard");
 assert.equal(grip.getAttribute("aria-expanded"), "true");
 const phoneHits = search("372");
 assert.match(d.querySelector("#list-title").textContent, /alle etasjer/);
 assert.equal(d.querySelector("#result-count").textContent, "1 rom");
 phoneHits[0].click();
 assert.equal(open(), false);
+assert.equal(panel.classList.contains("full"), false);
 assert.notEqual(d.activeElement, d.querySelector("#q"));
 assert.equal(d.querySelector("#map-floor").textContent, "3. etasje");
 search("no-such-room");

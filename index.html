@@ -89,10 +89,16 @@ aside { display: flex; flex-direction: column; min-height: 0; border-right: 1px 
 .intro h2 { margin: 0 0 4px; font-size: 28px; line-height: 1.25; font-weight: 500; letter-spacing: -.035em; }
 .intro p { margin: 0; color: var(--ink-2); font-size: 13px; }
 search { position: relative; display: block; }
-search .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-muted); pointer-events: none; }
-#q { width: 100%; height: 48px; padding: 10px 12px 10px 43px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); font-size: 16px; }
+search > .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-muted); pointer-events: none; }
+#q { width: 100%; height: 48px; padding: 10px 46px 10px 43px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); font-size: 16px; }
 #q::placeholder { color: var(--ink-muted); font-size: 14px; }
 #q:focus { border-color: var(--accent); outline-offset: 0; outline-width: 1px; }
+/* Our own ×, not the field's: that one is tiny, shows only while typing, and some phones
+   leave it out. Ours is a thumb's width and stays while there is anything to clear. */
+#q::-webkit-search-cancel-button { display: none; }
+#q-clear { position: absolute; top: 2px; right: 2px; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--ink-muted); }
+#q-clear:hover { color: var(--ink); }
+#q:placeholder-shown + #q-clear { display: none; }
 .field-caption { display: block; margin-bottom: 9px; color: var(--ink-2); font-size: 11px; font-weight: 650; letter-spacing: .09em; text-transform: uppercase; }
 .floors { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; padding: 3px; border-radius: 5px; background: var(--plane); }
 .floors button { min-height: 38px; padding: 6px 4px; border: 1px solid transparent; border-radius: 3px; background: transparent; font-weight: 500; font-variant-numeric: tabular-nums; }
@@ -200,7 +206,7 @@ search .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-muted
    and then eased the rest of the way — most visible on the way back out. */
 .marker[data-type="Kaffemaskiner"]:is(:hover, :focus-visible, .hot, .via, [aria-current="true"]) { box-shadow: none; scale: 1.26; }
 .grip { display: none; width: 100%; padding: 14px 0 8px; border: 0; background: none; cursor: grab; touch-action: none; }
-.grip::before { content: ''; display: block; width: 34px; height: 4px; margin: 0 auto; border-radius: 99px; background: var(--line); }
+.grip::before { content: ''; display: block; width: 36px; height: 5px; margin: 0 auto; border-radius: 99px; background: var(--ink-muted); }
 @media (prefers-reduced-motion: no-preference) {
   button, summary { transition: background-color .15s, color .15s, border-color .15s; }
   .marker { transition: opacity .15s, scale .15s; }
@@ -222,7 +228,10 @@ search .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-muted
   #zoom { display: none; }
   .toolbar button.wide { margin-left: 0; }
 }
-@media (max-width: 720px) and (orientation: portrait) {
+/* Not by orientation alone: a keyboard that shrinks the viewport leaves an upright phone
+   wider than it is tall, and the sheet turned into a column the moment the search field
+   was tapped. No phone is 560px wide upright, and none is that narrow on its side. */
+@media (max-width: 560px), (max-width: 720px) and (orientation: portrait) {
   main { grid-template-columns: 1fr; grid-template-rows: 1fr; }
   aside { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; max-height: 88dvh; padding-bottom: max(16px, env(safe-area-inset-bottom)); border: 0; border-top: 1px solid var(--line); border-radius: 10px 10px 0 0; box-shadow: 0 -4px 20px var(--ring); overflow: hidden; }
   aside.open { height: 72dvh; }
@@ -234,17 +243,31 @@ search .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-muted
   .field-caption { margin-bottom: 7px; font-size: 10px; }
   .floors button { min-height: 42px; }
   .grip { display: block; flex: none; }
+  /* The sheet drags from the controls as well as the grip: a thumb lands on the search
+     field or the floors far more often than on a 5px bar. Not while an open route makes
+     them scroll — that pan is theirs. pinch-zoom, not none, so the page still zooms. */
+  aside:not(.open:has(.route-panel[open])) .controls { touch-action: pinch-zoom; }
+  /* Searching, the keyboard takes the bottom half of the screen, and the results are what
+     matters: the sheet rises as high as it goes and drops everything between the field
+     and the list. Until the sheet is put down, not until the field loses focus — a tap on
+     a result blurs the field first, and the list must not jump under that same finger. */
+  aside.open.full { height: 88dvh; }
+  aside.full :is(.intro, .route-panel, .controls > div:has(.floors)) { display: none; }
   #collapse { display: none; }
   #panel[hidden] { display: flex; }
   .directory { flex: 1; padding-top: 16px; }
   .toolbar { top: 14px; bottom: auto; }
   .toolbar button { width: 34px; height: 34px; }
   .toolbar button.wide { font-size: 0; gap: 0; padding: 0 8px; }
-  .map-heading span { display: none; }
+  /* The address is room the toolbar needs; what a tapped pill is, is worth it. */
+  .map-heading { max-width: calc(100% - 170px); }
+  .map-heading > div { min-width: 0; }
+  .map-heading span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .map-heading span:not(.room) { display: none; }
   aside.open:has(.route-panel[open]) .controls { flex-shrink: 1; min-height: 0; overflow: auto; }
   aside.open:has(.route-panel[open]) .directory { flex-shrink: 0; min-height: 90px; }
 }
-@media (max-width: 720px) and (orientation: landscape) {
+@media (min-width: 561px) and (max-width: 720px) and (orientation: landscape) {
   main { grid-template-columns: minmax(230px, 40%) minmax(0, 1fr); }
   aside { overflow: auto; }
   .controls { padding: 14px; gap: 12px; }
@@ -273,6 +296,7 @@ search .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-muted
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
         <input id="q" type="search" aria-label="Søk etter rom i alle etasjer"
                placeholder="Søk etter rom eller romtype" autocomplete="off">
+        <button type="button" id="q-clear" aria-label="Tøm søket"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10 M17 7 7 17"/></svg></button>
       </search>
       <div><span class="field-caption">Velg etasje</span><nav class="floors" id="floors" aria-label="Etasje"></nav></div>
       <details class="route-panel" id="route-panel">
@@ -311,7 +335,7 @@ search .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-muted
   <section class="map" aria-label="Etasjekart">
     <div class="map-heading">
       <button type="button" id="collapse" aria-expanded="true" aria-controls="panel"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 7-5 5 5 5"/></svg></button>
-      <div><strong id="map-floor">3. etasje</strong><span>Grensesvingen 6</span></div>
+      <div><strong id="map-floor">3. etasje</strong><span id="map-room">Grensesvingen 6</span></div>
       <button type="button" id="theme"></button>
     </div>
     <p class="map-help"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4-4 4 4 4 M4 8h12 M16 20l4-4-4-4 M20 16H8"/></svg>Dra for å utforske · Velg et rom for å se hvor det er</p>
@@ -360,6 +384,7 @@ const el = {
   panel: document.getElementById('panel'),
   collapse: document.getElementById('collapse'),
   grip: document.getElementById('grip'),
+  mapRoom: document.getElementById('map-room'),
   list: document.getElementById('list'),
   from: document.getElementById('from'),
   to: document.getElementById('to'),
@@ -386,6 +411,7 @@ const id = r => slug(r.code) || `${r.type}-${r.x}`;
 // be given a nicer one by hand.
 const nameOf = r => names[r.code] || r.name || '';
 const label = r => [r.code || 'uten romnummer', nameOf(r)].filter(Boolean).join(' · ');
+const describe = r => [r.code, nameOf(r), r.type].filter(Boolean).join(' · ');
 
 function all() {
   return FLOOR_ORDER.flatMap(f => (rooms[f] || []).map(r => ({ ...r, floor: f })));
@@ -522,6 +548,10 @@ function render() {
   el.img.src = `plan-${floor}.png`;
   el.img.alt = `Plantegning ${floor}. etasje`;
   document.getElementById('map-floor').textContent = `${floor}. etasje`;
+  // A finger has no hover to read a pill's title by, so the heading says what was picked.
+  const room = (rooms[floor] || []).find(r => id(r) === selected);
+  el.mapRoom.textContent = room ? describe(room) : 'Grensesvingen 6';
+  el.mapRoom.classList.toggle('room', Boolean(room));
   renderFloors();
   renderMarkers(query);
   renderList(query);
@@ -608,13 +638,12 @@ function setZoom(v, anchorX, anchorY) {
 
 function select(target, zoomIn) {
   selected = target;
-  if (zoomIn && getComputedStyle(el.panel).position === 'fixed') {
-    setSheet(false);
-    el.q.blur();
-  }
+  if (zoomIn && getComputedStyle(el.panel).position === 'fixed') setSheet(false);
   if (zoomIn && Number(el.zoom.value) < 200) setZoom(200);
   render();
   const marker = [...el.plan.querySelectorAll('.marker')].find(m => m.dataset.id === target);
+  // Centred in what can be seen of the plan, which on a phone stops at the sheet.
+  el.viewport.style.scrollPaddingBottom = covered() + 'px';
   if (marker) marker.scrollIntoView({ block: 'center', inline: 'center',
     behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   // The row is already marked current; bring it into the panel too, so a pill
@@ -886,7 +915,7 @@ function renderPickers() {
           option.setAttribute('aria-selected', 'false');
           option.dataset.ref = ref(r);
           option.dataset.id = id(r);   // what highlight() reads, as on a room row
-          option.textContent = [r.code, nameOf(r), r.type].filter(Boolean).join(' · ');
+          option.textContent = describe(r);
           return option;
         }));
       return [group];
@@ -1145,21 +1174,31 @@ setPanel(true);
 
 /* ---------- the sheet, on a phone ---------- */
 
-// Where the panel is a bar across the bottom of the plan, the grip drags it open and
-// shut. Dragging sets a height in px and follows the finger; letting go snaps, by
-// direction, to one of the two states CSS owns. Everywhere else the grip is
-// display: none and none of this runs.
-let grab = null;        // where the drag started, and the sheet's height there
-let swallowTap = false; // a drag ends in a click of its own; that one must not toggle
+// Where the panel is a bar across the bottom of the plan, it drags open and shut — by
+// the grip, or by anything in the controls under it. Dragging sets a height in px and
+// follows the finger; letting go snaps, by direction, to one of the two states CSS
+// owns. Everywhere else none of this runs.
+let grab = null;            // the finger, where it started, and the sheet's height there
+let swallowSheetUntil = 0;  // a drag ends in a click of its own, on whatever it ended over
 
-function setSheet(open) {
+// full: as high as it goes, with nothing between the search field and the results.
+function setSheet(open, full = false) {
   el.panel.classList.toggle('open', open);
+  el.panel.classList.toggle('full', open && full);
   el.panel.style.height = '';   // back to the height the stylesheet picks
   el.grip.setAttribute('aria-expanded', String(open));
+  // Shut, the results are out of sight — and a search field that kept its focus would
+  // fire no focus event to bring them back on the next tap.
+  if (!open) el.q.blur();
 }
 
-el.grip.addEventListener('pointerdown', e => {
+el.panel.addEventListener('pointerdown', e => {
+  // The stylesheet says which parts drag the sheet: the ones it takes the browser's own
+  // panning away from. Outside a phone held upright that is none of them.
+  const handle = e.target.closest('.grip, .controls');
+  if (grab || !handle || getComputedStyle(handle).touchAction === 'auto') return;
   grab = {
+    id: e.pointerId,
     y: e.clientY,
     height: el.panel.offsetHeight,
     open: el.panel.classList.contains('open'),
@@ -1168,11 +1207,12 @@ el.grip.addEventListener('pointerdown', e => {
 });
 
 // On the window, like the map's pan: the finger leaves the grip long before the
-// gesture is over.
+// gesture is over. Past a tap's wobble only, now that the controls drag too — a
+// floor button pressed a few pixels off true is still a press.
 addEventListener('pointermove', e => {
-  if (!grab) return;
+  if (e.pointerId !== grab?.id) return;
   const dy = grab.y - e.clientY;
-  if (!grab.moved && Math.abs(dy) < 4) return;
+  if (!grab.moved && Math.abs(dy) < 8) return;
   grab.moved = true;
   // The list has to be in the sheet for the sheet to have anything to grow over.
   el.panel.classList.add('open');
@@ -1180,21 +1220,28 @@ addEventListener('pointermove', e => {
 });
 
 function endSheetDrag(e) {
-  if (!grab) return;
+  if (e.pointerId !== grab?.id) return;
   const { y, open, moved } = grab;
   grab = null;
-  if (!moved) return;   // a tap: onclick below has it, and the keyboard with it
-  swallowTap = true;
+  if (!moved) return;   // a tap: whatever was tapped has it, the keyboard with it
+  swallowSheetUntil = e.timeStamp + 300;
   const dy = y - e.clientY;
-  setSheet(Math.abs(dy) > 40 ? dy > 0 : open);
+  // A cancel is the browser taking the gesture over — a pinch — so the sheet goes back.
+  setSheet(e.type === 'pointerup' && Math.abs(dy) > 40 ? dy > 0 : open);
 }
 addEventListener('pointerup', endSheetDrag);
 addEventListener('pointercancel', endSheetDrag);
 
-el.grip.onclick = () => {
-  if (swallowTap) swallowTap = false;
-  else setSheet(!el.panel.classList.contains('open'));
-};
+// A window, not a flag: a touch drag usually ends in no click at all, and a flag left
+// up would eat the next real tap.
+el.panel.addEventListener('click', e => {
+  if (e.timeStamp > swallowSheetUntil) return;
+  swallowSheetUntil = 0;
+  e.stopPropagation();
+  e.preventDefault();
+}, true);
+
+el.grip.onclick = () => setSheet(!el.panel.classList.contains('open'));
 
 /* ---------- drag to pan, pinch to zoom ---------- */
 
@@ -1202,12 +1249,31 @@ const pointers = new Map();
 let pinch = null;      // distance + zoom at the moment the second finger landed
 let travelled = 0;     // so a drag that ends on a marker isn't taken for a click
 let swallowUntil = 0;
+let trail = [];        // the one finger's last 100 ms, for the speed it let go at
+let coasting = 0;      // the coast's animation frame, so a new touch can stop it
+let lastTap = null;    // the last tap's pointerup, so a second one close by can zoom
+let carry = { x: 0, y: 0 };
+
+// Safari keeps scroll offsets in whole pixels, rounded down, so a slow pan — a fraction of
+// a pixel per event on a 120 Hz screen — stalled dead one way and lurched the other. What
+// the rounding keeps back is carried into the next move instead.
+function panBy(dx, dy) {
+  const x = el.viewport.scrollLeft + dx + carry.x;
+  const y = el.viewport.scrollTop + dy + carry.y;
+  el.viewport.scrollLeft = x;
+  el.viewport.scrollTop = y;
+  // A pixel at most: against an edge, the rest is the edge's and not the next move's.
+  const kept = d => Math.max(-1, Math.min(1, d));
+  carry = { x: kept(x - el.viewport.scrollLeft), y: kept(y - el.viewport.scrollTop) };
+}
 
 el.viewport.addEventListener('pointerdown', e => {
   if (e.button !== 0) return;
+  cancelAnimationFrame(coasting);   // a finger put down on a moving plan stops it
   pointers.set(e.pointerId, e);
   pinch = null;
   travelled = 0;
+  trail = [];   // a second finger too: the speed is one finger's, never two mixed
   el.viewport.classList.add('dragging');
 });
 
@@ -1228,11 +1294,42 @@ addEventListener('pointermove', e => {
     const dx = e.clientX - previous.clientX;
     const dy = e.clientY - previous.clientY;
     travelled += Math.abs(dx) + Math.abs(dy);
-    el.viewport.scrollLeft -= dx;
-    el.viewport.scrollTop -= dy;
+    panBy(-dx, -dy);
+    trail.push({ t: e.timeStamp, x: e.clientX, y: e.clientY });
+    while (trail[0].t < e.timeStamp - 100) trail.shift();
   }
   e.preventDefault();
 }, { passive: false });
+
+// A pan let go of while still moving carries on and slows to a stop, the way a phone's own
+// scrolling does — without it the plan feels nailed down. It gives way to anything else
+// that moves the plan (a zoom, a floor, a room being scrolled to): one of those having
+// changed the offsets since the last frame ends the coast.
+function coast(v) {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  let was = { x: el.viewport.scrollLeft, y: el.viewport.scrollTop };
+  let then = performance.now();
+  const frame = now => {
+    if (el.viewport.scrollLeft !== was.x || el.viewport.scrollTop !== was.y) return;
+    const dt = Math.max(0, now - then);
+    then = now;
+    panBy(-v.x * dt, -v.y * dt);
+    was = { x: el.viewport.scrollLeft, y: el.viewport.scrollTop };
+    const friction = .998 ** dt;   // what iOS's own scrolling slows by
+    v = { x: v.x * friction, y: v.y * friction };
+    if (Math.hypot(v.x, v.y) > .02) coasting = requestAnimationFrame(frame);
+  };
+  coasting = requestAnimationFrame(frame);
+}
+
+// Two taps close together zoom in on where they landed, as a phone's own maps do. Not on
+// a pill: the first tap picked it, and the plan is already gliding over to it.
+function tapped(e) {
+  const twice = lastTap && e.timeStamp - lastTap.timeStamp < 300
+    && Math.hypot(e.clientX - lastTap.clientX, e.clientY - lastTap.clientY) < 30;
+  lastTap = twice ? null : e;
+  if (twice && !e.target.closest?.('.marker')) setZoom(Number(el.zoom.value) * 2, e.clientX, e.clientY);
+}
 
 function endGesture(e) {
   if (!pointers.delete(e.pointerId)) return;
@@ -1242,6 +1339,16 @@ function endGesture(e) {
     // A drag's own click lands immediately. Anything later — a keyboard Enter on
     // a marker, say — is a real click and must get through.
     swallowUntil = travelled > 4 ? e.timeStamp + 300 : 0;
+    if (e.type !== 'pointerup') return;
+    if (travelled <= 4) return tapped(e);
+    // The speed over the last stretch, not the last event: a finger slows as it lifts, and
+    // on a 120 Hz screen one event is a sliver of the motion. Held still before letting
+    // go, it has no recent stretch, and the plan stays where it was put.
+    const [first, last] = [trail[0], trail.at(-1)];
+    if (last && e.timeStamp - last.t < 60 && last.t > first.t) {
+      const dt = last.t - first.t;
+      coast({ x: (last.x - first.x) / dt, y: (last.y - first.y) / dt });
+    }
   }
 }
 addEventListener('pointerup', endGesture);
@@ -1267,15 +1374,15 @@ el.viewport.addEventListener('wheel', e => {
     const step = Math.max(-30, Math.min(30, e.deltaY * lines));
     setZoom(Number(el.zoom.value) * Math.exp(-step / 120), e.clientX, e.clientY);
   } else {
-    el.viewport.scrollLeft += e.deltaX * lines;
-    el.viewport.scrollTop += e.deltaY * lines;
+    panBy(e.deltaX * lines, e.deltaY * lines);
   }
 }, { passive: false });
 
 /* ---------- wiring ---------- */
 
-// Reveal search results when the phone's directory is a collapsed sheet.
-el.q.onfocus = () => setSheet(true);
+// Reveal search results when the phone's directory is a collapsed sheet, above where
+// the keyboard is about to come up.
+el.q.onfocus = () => setSheet(true, true);
 
 // A search covers every floor, and the list says so. Follow it on the plan too: if
 // nothing on the floor being shown matches, switch to the lowest floor that does,
@@ -1286,6 +1393,14 @@ el.q.oninput = () => {
   if (query && hits.length && !hits.some(r => r.floor === floor)) setFloor(hits[0].floor);
   else render();
 };
+const qClear = document.getElementById('q-clear');
+qClear.onclick = () => {
+  el.q.value = '';
+  el.q.oninput();
+};
+// Focus stays wherever it was: in the field, the keyboard stays up for the next search;
+// out of it, as on a phone's put-down sheet, clearing does not bring the keyboard up.
+qClear.onmousedown = e => e.preventDefault();
 // Hovering the panel points at the plan: a room row lights its own pill, a type's
 // heading lights every pill of that type. Delegated on the list — it is rebuilt on
 // every render — and mouseover/mouseout because those bubble, unlike mouseenter.
