@@ -86,7 +86,6 @@ main:has(#panel[hidden]) { grid-template-columns: 1fr; }
 #panel[hidden] { display: none; }
 aside { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--line); background: var(--surface); }
 .controls { flex: none; display: flex; flex-direction: column; gap: 20px; padding: 28px 24px 20px; border-bottom: 1px solid var(--line); }
-.intro h2 { margin: 0 0 4px; font-size: 28px; line-height: 1.25; font-weight: 500; letter-spacing: -.035em; }
 search { position: relative; display: block; }
 search > .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-muted); pointer-events: none; }
 #q { width: 100%; height: 48px; padding: 10px 46px 10px 43px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); font-size: 16px; }
@@ -217,7 +216,6 @@ search > .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-mut
 }
 @media (max-height: 760px) and (min-width: 721px) {
   .controls { padding-top: 18px; gap: 14px; }
-  .intro h2 { font-size: 23px; }
 }
 @media (max-width: 720px) {
   #theme { width: 36px; height: 36px; }
@@ -233,10 +231,9 @@ search > .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-mut
   main { grid-template-columns: 1fr; grid-template-rows: 1fr; }
   aside { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; max-height: 88dvh; padding-bottom: max(16px, env(safe-area-inset-bottom)); border: 0; border-top: 1px solid var(--line); border-radius: 10px 10px 0 0; box-shadow: 0 -4px 20px var(--ring); overflow: hidden; }
   aside.open { height: 72dvh; }
-  aside:not(.open) .directory, aside:not(.open) .route-panel, aside:not(.open) .intro { display: none; }
+  aside:not(.open) .directory, aside:not(.open) .route-panel { display: none; }
   .controls { flex-shrink: 0; gap: 14px; padding: 8px 20px 14px; }
   aside:not(.open) .controls { border-bottom: 0; padding-bottom: 0; }
-  .intro h2 { font-size: 23px; }
   .field-caption { margin-bottom: 7px; font-size: 10px; }
   .floors button { min-height: 42px; }
   .grip { display: block; flex: none; }
@@ -249,7 +246,7 @@ search > .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-mut
      and the list. Until the sheet is put down, not until the field loses focus — a tap on
      a result blurs the field first, and the list must not jump under that same finger. */
   aside.open.full { height: 88dvh; }
-  aside.full :is(.intro, .route-panel, .controls > div:has(.floors)) { display: none; }
+  aside.full :is(.route-panel, .controls > div:has(.floors)) { display: none; }
   #collapse { display: none; }
   #panel[hidden] { display: flex; }
   .directory { flex: 1; padding-top: 16px; }
@@ -268,7 +265,6 @@ search > .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-mut
   main { grid-template-columns: minmax(230px, 40%) minmax(0, 1fr); }
   aside { overflow: auto; }
   .controls { padding: 14px; gap: 12px; }
-  .intro { display: none; }
   .directory { overflow: visible; }
 }
 @media (pointer: coarse) {
@@ -288,7 +284,6 @@ search > .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-mut
     <button type="button" class="grip" id="grip" aria-expanded="false"
             aria-controls="list" aria-label="Vis eller skjul romlisten"></button>
     <div class="controls">
-      <div class="intro"><h2>Hvor skal du?</h2></div>
       <search>
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
         <input id="q" type="search" aria-label="Søk etter rom i alle etasjer"
