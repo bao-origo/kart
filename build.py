@@ -49,7 +49,16 @@ MATCH_RADIUS = 60
 # The eighth floor's coffee machine is named on the machine and nowhere else.
 # S 850 is the long room along the south wing's south side: the drawing carries the
 # four codes 851-854 of the offices it used to be, and no type label of its own.
+# S 639 is labelled "Landskap", the open office it used to be; it sits on its label.
 EXTRA = {
+    "6": [
+        {
+            "type": "Møterom",
+            "code": "S 639",
+            "x": 0.1061,
+            "y": 0.7907,
+        },
+    ],
     "8": [
         {
             "type": "Kaffemaskiner",
