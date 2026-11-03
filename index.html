@@ -87,14 +87,15 @@ main:has(#panel[hidden]) { grid-template-columns: 1fr; }
 aside { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--line); background: var(--surface); }
 .controls { flex: none; display: flex; flex-direction: column; gap: 20px; padding: 28px 24px 20px; border-bottom: 1px solid var(--line); }
 search { position: relative; display: block; }
-search > .icon { position: absolute; left: 14px; top: 14px; color: var(--ink-muted); pointer-events: none; }
-#q { width: 100%; height: 48px; padding: 10px 46px 10px 43px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); font-size: 16px; }
-#q::placeholder { color: var(--ink-muted); font-size: 14px; }
-#q:focus { border-color: var(--accent); outline-offset: 0; outline-width: 1px; }
+search > .icon { position: absolute; left: 14px; top: 16px; color: var(--ink-2); pointer-events: none; }
+/* The first thing the eye should land on: accent border and the map controls' shadow. */
+#q { width: 100%; height: 52px; padding: 10px 46px 10px 43px; border: 2px solid var(--accent); border-radius: 5px; background: var(--surface); box-shadow: var(--shadow); font-size: 16px; }
+#q::placeholder { color: var(--ink-2); font-size: 14px; }
+#q:focus { outline-offset: 0; outline-width: 1px; box-shadow: var(--shadow), 0 0 0 3px var(--accent-soft); }
 /* Our own ×, not the field's: that one is tiny, shows only while typing, and some phones
    leave it out. Ours is a thumb's width and stays while there is anything to clear. */
 #q::-webkit-search-cancel-button { display: none; }
-#q-clear { position: absolute; top: 2px; right: 2px; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--ink-muted); }
+#q-clear { position: absolute; top: 4px; right: 4px; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--ink-muted); }
 #q-clear:hover { color: var(--ink); }
 #q:placeholder-shown + #q-clear { display: none; }
 .field-caption { display: block; margin-bottom: 9px; color: var(--ink-2); font-size: 11px; font-weight: 650; letter-spacing: .09em; text-transform: uppercase; }
@@ -1430,6 +1431,9 @@ Promise.all([
   render();
   fit();
   fromHash();
+  // Ready to type on a desktop. Not on a phone or in the sheet layout: focus opens the
+  // sheet full height and a touch keyboard would cover the map.
+  if (matchMedia('(pointer: fine) and (min-width: 721px)').matches) el.q.focus({ preventScroll: true });
 }).catch(err => {
   el.list.textContent = 'Klarte ikke å laste romdata.';
   console.error(err);
